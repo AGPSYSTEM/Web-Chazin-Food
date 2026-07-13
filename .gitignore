@@ -1,0 +1,21 @@
+# Node.js
+**/node_modules/
+**/node/
+**/dist/
+.env
+*.log
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+temp_exec.sh
+test_exec.sh
+organize.py
+download_node.py
+git_push.py
+update_imports.py
