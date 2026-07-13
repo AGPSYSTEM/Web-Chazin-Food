@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, ShoppingCart, User, Search, Package, Clock, X, Plus, Minus, Award, TrendingUp, Sun, Moon, Menu, MapPin, CreditCard, Banknote, Smartphone, FileText, ChevronRight, ChevronUp, ChevronDown, CheckCircle, Truck, Store, Flame, Gift } from "lucide-react";
+import { LogOut, LogIn, ShoppingCart, User, Search, Package, Clock, X, Plus, Minus, Award, TrendingUp, Sun, Moon, Menu, MapPin, CreditCard, Banknote, Smartphone, FileText, ChevronRight, ChevronUp, ChevronDown, CheckCircle, Truck, Store, Flame, Gift } from "lucide-react";
 import { useAuth } from "@/domain/state/AuthContext";
 import { useDarkMode } from "@/domain/hooks/useDarkMode";
 import { useNotifications } from "@/domain/hooks/useNotifications";
@@ -91,6 +91,7 @@ export function ClienteLanding() {
   const [selectedCategoria, setSelectedCategoria] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCart, setShowCart] = useState(false);
+  const [showEmptyCartLoginModal, setShowEmptyCartLoginModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkoutNombre, setCheckoutNombre] = useState("");
   const [checkoutDireccion, setCheckoutDireccion] = useState("");
@@ -553,7 +554,7 @@ export function ClienteLanding() {
               <button
     onClick={() => {
       if (!isAuthenticated) {
-        navigate("/login");
+        setShowEmptyCartLoginModal(true);
         return;
       }
       setShowCart(!showCart);
@@ -1424,7 +1425,45 @@ export function ClienteLanding() {
                   </div>
                 </div>)}
             </div>
-          </div>
         </div>}
+
+      {showEmptyCartLoginModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-6">
+            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/30 rounded-2xl flex items-center justify-center mx-auto">
+              <ShoppingCart className="w-10 h-10 text-red-500" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                Tu carrito está vacío
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 px-2 leading-relaxed">
+                Inicia sesión para agregar productos y realizar tu pedido.
+              </p>
+            </div>
+            
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowEmptyCartLoginModal(false);
+                  navigate("/login");
+                }}
+                className="w-full py-3.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98]"
+              >
+                <LogIn className="w-5 h-5" />
+                Iniciar Sesión
+              </button>
+              
+              <button
+                onClick={() => setShowEmptyCartLoginModal(false)}
+                className="w-full py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium transition-all text-sm cursor-pointer"
+              >
+                Seguir explorando
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>;
 }
