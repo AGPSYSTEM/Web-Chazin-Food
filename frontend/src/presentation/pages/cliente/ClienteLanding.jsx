@@ -138,7 +138,6 @@ export function ClienteLanding() {
   });
   const handleProductClick = (producto) => {
     if (!isAuthenticated) {
-      error("Inicia sesión requerido", "Debes iniciar sesión para agregar productos al carrito.");
       navigate("/login");
       return;
     }
@@ -199,7 +198,6 @@ export function ClienteLanding() {
   };
   const handleAbrirCheckout = () => {
     if (!isAuthenticated) {
-      error("Inicia sesión requerido", "Debes iniciar sesión para completar tu pedido.");
       navigate("/login");
       return;
     }
@@ -555,7 +553,6 @@ export function ClienteLanding() {
               <button
     onClick={() => {
       if (!isAuthenticated) {
-        error("Inicia sesión requerido", "Debes iniciar sesión para ver el carrito.");
         navigate("/login");
         return;
       }
