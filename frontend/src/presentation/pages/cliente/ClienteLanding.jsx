@@ -1425,6 +1425,7 @@ export function ClienteLanding() {
                   </div>
                 </div>)}
             </div>
+          </div>
         </div>}
 
       {showEmptyCartLoginModal && (
