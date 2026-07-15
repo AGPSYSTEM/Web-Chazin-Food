@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Shield, Check, Users, X, Edit, Trash2, ToggleLeft, ToggleRight, Plus } from "lucide-react";
 const rolesData = [
   {
@@ -58,9 +58,9 @@ const getRolAccent = (nombre) => {
       return { bg: "from-gray-400 to-gray-600", icon: "bg-gray-100 dark:bg-gray-700", iconText: "text-gray-500", badge: "bg-gray-100 dark:bg-gray-700 text-gray-600" };
   }
 };
-let nextId = 4;
 export function Roles() {
-  const [roles, setRoles] = useState(rolesData.map((r) => ({ ...r, permisos: [...r.permisos] })));
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showPermisosModal, setShowPermisosModal] = useState(false);
   const [selectedRol, setSelectedRol] = useState(null);
@@ -73,70 +73,159 @@ export function Roles() {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoDescripcion, setNuevoDescripcion] = useState("");
   const [toast, setToast] = useState(null);
+
   const showToast = (msg) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 3e3);
+    setTimeout(() => setToast(null), 3000);
   };
+
+  const fetchRoles = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/api/roles");
+      if (!response.ok) {
+        throw new Error("Error al obtener los roles");
+      }
+      const data = await response.json();
+      setRoles(data);
+    } catch (error) {
+      console.error(error);
+      showToast("Error al cargar los roles");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
   const totalRoles = roles.length;
   const rolesActivos = roles.filter((r) => r.estado === "Activo").length;
   const totalUsuariosAsignados = roles.reduce((acc, r) => acc + r.usuarios, 0);
+  
   const filtered = roles.filter(
-    (r) => searchTerm.trim() === "" || r.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || r.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
+    (r) => searchTerm.trim() === "" || 
+           r.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           r.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
   const openPermisos = (rol) => {
     setSelectedRol(rol);
     setEditingPermisos([...rol.permisos]);
     setShowPermisosModal(true);
   };
+
   const togglePermiso = (permiso) => {
     setEditingPermisos(
       (prev) => prev.includes(permiso) ? prev.filter((p) => p !== permiso) : [...prev, permiso]
     );
   };
+
   const savePermisos = () => {
     setRoles((prev) => prev.map((r) => r.id === selectedRol.id ? { ...r, permisos: [...editingPermisos] } : r));
     setShowPermisosModal(false);
     setSelectedRol(null);
     showToast("Permisos actualizados correctamente");
   };
+
   const openEdit = (rol) => {
     setEditingRol(rol);
     setEditNombre(rol.nombre);
     setEditDescripcion(rol.descripcion);
     setShowEditModal(true);
   };
-  const saveEdit = () => {
+
+  const saveEdit = async () => {
     if (!editNombre.trim()) return;
-    setRoles((prev) => prev.map((r) => r.id === editingRol.id ? { ...r, nombre: editNombre.trim(), descripcion: editDescripcion.trim() } : r));
-    setShowEditModal(false);
-    setEditingRol(null);
-    showToast("Rol actualizado correctamente");
+    try {
+      const response = await fetch(`http://localhost:5000/api/roles/${editingRol.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: editNombre.trim(),
+          descripcion: editDescripcion.trim(),
+        }),
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || "Error al actualizar el rol");
+      }
+      const updatedRole = await response.json();
+      setRoles((prev) => prev.map((r) => r.id === editingRol.id ? { ...r, nombre: updatedRole.nombre, descripcion: updatedRole.descripcion } : r));
+      setShowEditModal(false);
+      setEditingRol(null);
+      showToast("Rol actualizado correctamente");
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Error al actualizar el rol");
+    }
   };
+
   const toggleEstado = (id) => {
     setRoles((prev) => prev.map((r) => r.id === id ? { ...r, estado: r.estado === "Activo" ? "Inactivo" : "Activo" } : r));
     showToast("Estado del rol actualizado");
   };
-  const deleteRol = (id, nombre) => {
+
+  const deleteRol = async (id, nombre) => {
     if (nombre === "Administrador") return;
-    if (!window.confirm(`\xBFEst\xE1s seguro de que deseas eliminar el rol "${nombre}"?`)) return;
-    setRoles((prev) => prev.filter((r) => r.id !== id));
-    showToast("Rol eliminado correctamente");
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar el rol "${nombre}"?`)) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/roles/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || "Error al eliminar el rol");
+      }
+      setRoles((prev) => prev.filter((r) => r.id !== id));
+      showToast("Rol eliminado correctamente");
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Error al eliminar el rol");
+    }
   };
-  const saveNuevoRol = () => {
+
+  const saveNuevoRol = async () => {
     if (!nuevoNombre.trim()) return;
-    setRoles((prev) => [...prev, {
-      id: nextId++,
-      nombre: nuevoNombre.trim(),
-      descripcion: nuevoDescripcion.trim() || "Sin descripci\xF3n",
-      usuarios: 0,
-      permisos: [],
-      estado: "Activo"
-    }]);
-    setShowNuevoModal(false);
-    setNuevoNombre("");
-    setNuevoDescripcion("");
-    showToast("Nuevo rol creado correctamente");
+    try {
+      const response = await fetch("http://localhost:5000/api/roles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: nuevoNombre.trim(),
+          descripcion: nuevoDescripcion.trim(),
+        }),
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || "Error al crear el rol");
+      }
+      const newRole = await response.json();
+      setRoles((prev) => [...prev, newRole]);
+      setShowNuevoModal(false);
+      setNuevoNombre("");
+      setNuevoDescripcion("");
+      showToast("Nuevo rol creado correctamente");
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Error al crear el rol");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 bg-gray-50 dark:bg-gray-950 min-h-full flex flex-col items-center justify-center gap-3">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#F05454]"></div>
+        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium animate-pulse">Cargando roles desde la base de datos...</p>
+      </div>
+    );
+  }
+
   return <div className="p-4 md:p-6 lg:p-8 bg-gray-50 dark:bg-gray-950 min-h-full">
 
       {

@@ -32,6 +32,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/products', require('./src/routes/productRoutes'));
 app.use('/api/orders', require('./src/routes/orderRoutes'));
+app.use('/api/roles', require('./src/routes/roleRoutes'));
+
 
 // Error Handler Middleware
 app.use(errorHandler);
