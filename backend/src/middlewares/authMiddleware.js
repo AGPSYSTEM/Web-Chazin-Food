@@ -12,12 +12,25 @@ const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood');
 
+      // Get user from database
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        return res.status(401).json({ message: 'No autorizado, usuario no encontrado' });
+      }
+
+      // Check if user is active
+      if (user.estado === 0) {
+        return res.status(401).json({ message: 'No autorizado, esta cuenta ha sido desactivada' });
+      }
+
       // Get user from the token (exclude password)
-      req.user = await User.findById(decoded.id).select('-contrase\u00f1a');
+      const { contrasena, contraseña, ...userWithoutPassword } = user;
+      req.user = userWithoutPassword;
 
       next();
     } catch (error) {
-      console.error(error);
+      console.error('Error en autenticación de token:', error.message);
       res.status(401).json({ message: 'No autorizado, token fallido' });
     }
   }
@@ -29,8 +42,15 @@ const protect = async (req, res, next) => {
 
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if (req.user && roles.includes(req.user.rol)) {
-      next();
+    if (req.user && req.user.rol) {
+      const userRol = req.user.rol.toLowerCase();
+      const allowedRoles = roles.map(role => role.toLowerCase());
+      
+      if (allowedRoles.includes(userRol)) {
+        next();
+      } else {
+        res.status(403).json({ message: 'No tienes permisos para acceder a esta ruta' });
+      }
     } else {
       res.status(403).json({ message: 'No tienes permisos para acceder a esta ruta' });
     }
