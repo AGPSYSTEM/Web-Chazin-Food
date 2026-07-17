@@ -1,13 +1,13 @@
+const dotenv = require('dotenv');
+// Load environment variables as early as possible
+dotenv.config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const dotenv = require('dotenv');
 const connectDB = require('./src/config/db');
 const { errorHandler } = require('./src/middlewares/errorMiddleware');
-
-// Load environment variables
-dotenv.config();
 
 // Connect to Database
 connectDB();
@@ -33,8 +33,11 @@ app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/products', require('./src/routes/productRoutes'));
 app.use('/api/orders', require('./src/routes/orderRoutes'));
 app.use('/api/roles', require('./src/routes/roleRoutes'));
-
-
+app.use('/api/insumos', require('./src/routes/insumoRoutes'));
+app.use('/api/categorias-insumo', require('./src/routes/categoriaInsumoRoutes'));
+app.use('/api/insumos-preparados', require('./src/routes/insumoPreparadoRoutes'));
+app.use('/api/proveedores', require('./src/routes/proveedorRoutes'));
+app.use('/api/trazabilidad', require('./src/routes/trazabilidadRoutes'));
 // Error Handler Middleware
 app.use(errorHandler);
 
