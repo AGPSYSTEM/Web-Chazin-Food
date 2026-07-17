@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Edit, Trash2, AlertCircle, Package, X, TrendingDown, Bell, CheckCircle2, PlusCircle, Pencil, Clock, Filter, Trash, FlaskConical, ChevronDown, ChevronUp, Minus } from "lucide-react";
 import { Pagination } from "@/presentation/components/common/Pagination";
 import { FichaTecnicaInsumo } from "@/presentation/pages/fichasTecnicas/FichaTecnicaInsumo";
@@ -28,7 +28,71 @@ export function Insumos() {
     if (val <= 20) return "Bajo";
     return "Normal";
   };
-  const [insumosData, setInsumosData] = useState(insumosDataInitial);
+  const [insumosData, setInsumosData] = useState([]);
+
+  const fetchInsumos = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/insumos');
+      if (response.ok) {
+        const data = await response.json();
+        setInsumosData(data.map(i => ({
+          ...i,
+          stockActual: Number(i.stock),
+          precioUnitario: Number(i.precioUnitario || 0),
+          categoriaNombre: i.categoriaNombre || 'Sin Categoría',
+          proveedorNombre: i.proveedorNombre || 'Sin Proveedor'
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching insumos:', error);
+      notify.error('Error', 'No se pudieron cargar los insumos');
+    }
+  };
+
+  const fetchPreparados = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/insumos-preparados');
+      if (response.ok) {
+        const data = await response.json();
+        setInsumosPreparados(data);
+      }
+    } catch (error) {
+      console.error('Error fetching preparados:', error);
+      notify.error('Error', 'No se pudieron cargar los insumos preparados');
+    }
+  };
+
+  const [categoriasData, setCategoriasData] = useState([]);
+  const [proveedoresList, setProveedoresList] = useState([]);
+
+  const fetchCategoriasYProveedores = async () => {
+    try {
+      const resCat = await fetch('http://localhost:5000/api/categorias-insumo');
+      if (resCat.ok) setCategoriasData(await resCat.json());
+      const resProv = await fetch('http://localhost:5000/api/proveedores');
+      if (resProv.ok) setProveedoresList(await resProv.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchTrazabilidad = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/trazabilidad');
+      if (response.ok) {
+        setEventos(await response.json());
+      }
+    } catch (e) {
+      console.error('Error fetching trazabilidad:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchInsumos();
+    fetchPreparados();
+    fetchCategoriasYProveedores();
+    fetchTrazabilidad();
+  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -42,22 +106,36 @@ export function Insumos() {
   const [showBandeja, setShowBandeja] = useState(false);
   const [filtroBandeja, setFiltroBandeja] = useState("todos");
   const [nextEventoId, setNextEventoId] = useState(1);
-  const registrarEvento = (tipo, insumoNombre, detalle) => {
-    setEventos((prev) => [{
-      id: nextEventoId,
-      tipo,
-      insumoNombre,
-      detalle,
-      fecha: /* @__PURE__ */ new Date(),
-      leido: false
-    }, ...prev]);
-    setNextEventoId((n) => n + 1);
+  const registrarEvento = async (tipo, entidadNombre, detalle) => {
+    try {
+      await fetch('http://localhost:5000/api/trazabilidad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo, entidadNombre, detalle })
+      });
+      fetchTrazabilidad();
+    } catch (error) {
+      console.error('Error al registrar evento:', error);
+    }
   };
-  const marcarTodosLeidos = () => setEventos((prev) => prev.map((e) => ({ ...e, leido: true })));
-  const limpiarBandeja = () => setEventos([]);
+
+  const marcarTodosLeidos = async () => {
+    try {
+      await fetch('http://localhost:5000/api/trazabilidad/read-all', { method: 'PUT' });
+      fetchTrazabilidad();
+    } catch (e) { console.error(e); }
+  };
+
+  const limpiarBandeja = async () => {
+    try {
+      await fetch('http://localhost:5000/api/trazabilidad/clear', { method: 'DELETE' });
+      fetchTrazabilidad();
+    } catch (e) { console.error(e); }
+  };
   const eventosFiltrados = filtroBandeja === "todos" ? eventos : eventos.filter((e) => e.tipo === filtroBandeja);
   const noLeidos = eventos.filter((e) => !e.leido).length;
-  const formatFecha = (d) => {
+  const formatFecha = (dateString) => {
+    const d = new Date(dateString);
     const pad = (n) => String(n).padStart(2, "0");
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
@@ -96,7 +174,7 @@ export function Insumos() {
       (c) => c.idInsumo === idInsumo ? { ...c, cantidad: Math.max(0.1, parseFloat((c.cantidad + delta).toFixed(2))) } : c
     )
   }));
-  const handleGuardarPreparado = () => {
+  const handleGuardarPreparado = async () => {
     if (!formPreparado.nombre.trim() || formPreparado.componentes.length === 0) return;
     const base = {
       nombre: formPreparado.nombre.trim(),
@@ -107,39 +185,65 @@ export function Insumos() {
       componentes: formPreparado.componentes,
       costoTotal: costoFormPreparado
     };
-    if (editandoPreparadoId !== null) {
-      setInsumosPreparados((prev) => prev.map(
-        (p) => p.id === editandoPreparadoId ? { ...p, ...base } : p
-      ));
-      registrarEvento(
-        "editar",
-        base.nombre,
-        `Insumo preparado actualizado \xB7 ${base.componentes.length} componente(s) \xB7 Costo: $${base.costoTotal.toLocaleString()}`
-      );
-      setEditandoPreparadoId(null);
-      setFormPreparado(emptyPreparado);
-      setShowModalPreparado(false);
-      notify.success("Insumo preparado actualizado", `"${base.nombre}" se actualiz\xF3 correctamente`);
-    } else {
-      const nuevo = { id: nextPreparadoId, ...base, fechaCreacion: /* @__PURE__ */ new Date() };
-      setInsumosPreparados((prev) => [...prev, nuevo]);
-      setNextPreparadoId((n) => n + 1);
-      registrarEvento(
-        "crear",
-        nuevo.nombre,
-        `Insumo preparado con ${nuevo.componentes.length} componente(s) \xB7 Costo: $${nuevo.costoTotal.toLocaleString()}`
-      );
-      setFormPreparado(emptyPreparado);
-      setShowModalPreparado(false);
-      notify.success("Insumo preparado creado", `"${nuevo.nombre}" se guard\xF3 correctamente`);
+    
+    try {
+      if (editandoPreparadoId !== null) {
+        const response = await fetch(`http://localhost:5000/api/insumos-preparados/${editandoPreparadoId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(base)
+        });
+        if (response.ok) {
+          await fetchPreparados();
+          registrarEvento("editar", base.nombre, `Se actualizaron los datos del insumo preparado: ${base.nombre}`);
+          setEditandoPreparadoId(null);
+          setFormPreparado(emptyPreparado);
+          setShowModalPreparado(false);
+          notify.success("Insumo preparado actualizado", `"${base.nombre}" se actualizó correctamente`);
+        } else {
+          notify.error("Error", "No se pudo actualizar");
+        }
+      } else {
+        const response = await fetch('http://localhost:5000/api/insumos-preparados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(base)
+        });
+        if (response.ok) {
+          await fetchPreparados();
+          registrarEvento("crear", base.nombre, `Se registró el nuevo insumo preparado: ${base.nombre}`);
+          setFormPreparado(emptyPreparado);
+          setShowModalPreparado(false);
+          notify.success("Insumo preparado creado", `"${base.nombre}" se guardó correctamente`);
+        } else {
+          notify.error("Error", "No se pudo crear");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Error de conexión");
     }
   };
+
   const eliminarPreparado = async (prep) => {
-    const ok = await notify.confirmDelete("\xBFEliminar insumo preparado?", `\xBFEliminar "${prep.nombre}"?`);
+    const ok = await notify.confirmDelete("¿Eliminar insumo preparado?", `¿Eliminar "${prep.nombre}"?`);
     if (!ok) return;
-    setInsumosPreparados((prev) => prev.filter((p) => p.id !== prep.id));
-    registrarEvento("eliminar", prep.nombre, `Insumo preparado con ${prep.componentes.length} componente(s) eliminado`);
-    notify.success("Eliminado", `"${prep.nombre}" fue eliminado`);
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/insumos-preparados/${prep.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        await fetchPreparados();
+        registrarEvento("eliminar", prep.nombre, `Se eliminó del sistema el insumo preparado: ${prep.nombre}`);
+        notify.success("Eliminado", `"${prep.nombre}" fue eliminado`);
+      } else {
+        notify.error("Error", "No se pudo eliminar");
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Error de conexión");
+    }
   };
   const abrirEditarPreparado = (prep) => {
     setEditandoPreparadoId(prep.id);
@@ -192,56 +296,47 @@ export function Insumos() {
       !newInsumo.nombre.trim() ||
       !newInsumo.idCategoriaInsumo ||
       !newInsumo.idProveedor ||
-      !newInsumo.stockActual.trim() ||
+      newInsumo.stockActual.toString().trim() === "" ||
       parseInt(newInsumo.stockActual) < 0 ||
-      !newInsumo.precioUnitario.trim() ||
+      newInsumo.precioUnitario.toString().trim() === "" ||
       parseFloat(newInsumo.precioUnitario) < 0
     ) {
       return;
     }
-    const nextId = insumosData.length ? Math.max(...insumosData.map((i) => i.idInsumo)) + 1 : 1;
-    const categoriaNombres = {
-      "1": "Frutas",
-      "2": "Verduras",
-      "3": "Proteínas",
-      "4": "Carbohidratos",
-      "5": "Lácteos",
-      "6": "Condimentos",
-      "7": "Bebidas"
-    };
-    const proveedorNombres = {
-      "1": "FruVer SA",
-      "2": "Carnes Premium",
-      "3": "Avícola del Sur",
-      "4": "Lácteos del Valle",
-      "5": "Panadería El Trigo",
-      "6": "Distribuidora Andina",
-      "7": "Alimentos del Caribe"
-    };
-    const stockActual = parseInt(newInsumo.stockActual) || 0;
-    const nuevoInsumo = {
-      idInsumo: nextId,
-      nombre: newInsumo.nombre,
-      idCategoriaInsumo: parseInt(newInsumo.idCategoriaInsumo),
-      categoriaNombre: categoriaNombres[newInsumo.idCategoriaInsumo] || "Sin Categoría",
-      stockActual,
-      unidadMedida: newInsumo.unidadMedida,
-      precioUnitario: parseFloat(newInsumo.precioUnitario) || 0,
-      stock: getStockStatus(stockActual),
-      idProveedor: parseInt(newInsumo.idProveedor) || 1,
-      proveedorNombre: proveedorNombres[newInsumo.idProveedor] || "Sin Proveedor",
-      fichaTecnica: newInsumo.fichaTecnica
-    };
-    setInsumosData([...insumosData, nuevoInsumo]);
-    setShowModal(false);
-    setNewInsumo({ nombre: "", idCategoriaInsumo: "", stockActual: "", unidadMedida: "kg", precioUnitario: "", idProveedor: "", descripcion: "", fichaTecnica: null });
-    setFormSubmitted(false);
-    registrarEvento(
-      "crear",
-      nuevoInsumo.nombre,
-      `Stock: ${nuevoInsumo.stockActual} ${nuevoInsumo.unidadMedida} · Precio: $${nuevoInsumo.precioUnitario.toLocaleString()} · Proveedor: ${nuevoInsumo.proveedorNombre}`
-    );
-    notify.success("Insumo creado", "El insumo se agregó correctamente");
+
+    try {
+      const response = await fetch('http://localhost:5000/api/insumos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: newInsumo.nombre,
+          idCategoriaInsumo: parseInt(newInsumo.idCategoriaInsumo),
+          stock: parseInt(newInsumo.stockActual) || 0,
+          unidadMedida: newInsumo.unidadMedida,
+          precioUnitario: parseFloat(newInsumo.precioUnitario) || 0,
+          idProveedor: parseInt(newInsumo.idProveedor) || 1,
+          descripcion: newInsumo.descripcion || ''
+        })
+      });
+
+      if (response.ok) {
+        await fetchInsumos();
+        setShowModal(false);
+        setNewInsumo({ nombre: "", idCategoriaInsumo: "", stockActual: "", unidadMedida: "kg", precioUnitario: "", idProveedor: "", descripcion: "", fichaTecnica: null });
+        setFormSubmitted(false);
+        registrarEvento(
+          "crear",
+          newInsumo.nombre,
+          `Se ingresó al inventario el insumo: ${newInsumo.nombre} con ${newInsumo.stockActual} ${newInsumo.unidadMedida}`
+        );
+        notify.success("Insumo creado", "El insumo se agregó correctamente");
+      } else {
+        notify.error("Error", "No se pudo guardar el insumo");
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Fallo de conexión al guardar el insumo");
+    }
   };
   const handleSaveEditInsumo = async () => {
     setEditFormSubmitted(true);
@@ -259,53 +354,61 @@ export function Insumos() {
     ) {
       return;
     }
-    const categoriaNombres = {
-      "1": "Frutas",
-      "2": "Verduras",
-      "3": "Proteínas",
-      "4": "Carbohidratos",
-      "5": "Lácteos",
-      "6": "Condimentos",
-      "7": "Bebidas"
-    };
-    const proveedorNombres = {
-      "1": "FruVer SA",
-      "2": "Carnes Premium",
-      "3": "Avícola del Sur",
-      "4": "Lácteos del Valle",
-      "5": "Panadería El Trigo",
-      "6": "Distribuidora Andina",
-      "7": "Alimentos del Caribe"
-    };
-    const updatedInsumo = {
-      ...editInsumo,
-      stock: getStockStatus(editInsumo.stockActual),
-      categoriaNombre: categoriaNombres[editInsumo.idCategoriaInsumo] || editInsumo.categoriaNombre,
-      proveedorNombre: proveedorNombres[editInsumo.idProveedor] || editInsumo.proveedorNombre
-    };
-    setInsumosData(insumosData.map((i) => i.idInsumo === updatedInsumo.idInsumo ? updatedInsumo : i));
-    setEditFormSubmitted(false);
-    const cambios = [];
-    if (selectedInsumo.nombre !== updatedInsumo.nombre) cambios.push(`Nombre: "${selectedInsumo.nombre}" → "${updatedInsumo.nombre}"`);
-    if (selectedInsumo.stockActual !== updatedInsumo.stockActual) cambios.push(`Stock: ${selectedInsumo.stockActual} → ${updatedInsumo.stockActual} ${updatedInsumo.unidadMedida}`);
-    if (selectedInsumo.precioUnitario !== updatedInsumo.precioUnitario) cambios.push(`Precio: $${selectedInsumo.precioUnitario.toLocaleString()} → $${updatedInsumo.precioUnitario.toLocaleString()}`);
-    if (selectedInsumo.stock !== updatedInsumo.stock) cambios.push(`Estado stock: ${selectedInsumo.stock} → ${updatedInsumo.stock}`);
-    if (selectedInsumo.proveedorNombre !== updatedInsumo.proveedorNombre) cambios.push(`Proveedor: ${selectedInsumo.proveedorNombre} → ${updatedInsumo.proveedorNombre}`);
-    registrarEvento("editar", updatedInsumo.nombre, cambios.length ? cambios.join(" · ") : "Sin cambios detectados");
-    closeEdit();
-    notify.success("Insumo actualizado", "Los cambios se guardaron correctamente");
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/insumos/${editInsumo.idInsumo}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: editInsumo.nombre,
+          idCategoriaInsumo: parseInt(editInsumo.idCategoriaInsumo),
+          stock: parseInt(editInsumo.stockActual),
+          unidadMedida: editInsumo.unidadMedida,
+          precioUnitario: parseFloat(editInsumo.precioUnitario) || 0,
+          idProveedor: parseInt(editInsumo.idProveedor) || 1,
+          descripcion: editInsumo.descripcion || ''
+        })
+      });
+
+      if (response.ok) {
+        await fetchInsumos();
+        setEditFormSubmitted(false);
+        registrarEvento("editar", editInsumo.nombre, `Se modificaron las propiedades del insumo: ${editInsumo.nombre}`);
+        closeEdit();
+        notify.success("Insumo actualizado", "Los cambios se guardaron correctamente");
+      } else {
+        notify.error("Error", "No se pudo actualizar el insumo");
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Fallo de conexión al actualizar el insumo");
+    }
   };
   const handleDeleteInsumo = async () => {
     if (!selectedInsumo) return;
     const nombre = selectedInsumo.nombre;
-    setInsumosData(insumosData.filter((i) => i.idInsumo !== selectedInsumo.idInsumo));
-    registrarEvento(
-      "eliminar",
-      nombre,
-      `Stock al eliminar: ${selectedInsumo.stockActual} ${selectedInsumo.unidadMedida} \xB7 Proveedor: ${selectedInsumo.proveedorNombre}`
-    );
-    closeDelete();
-    notify.success("Insumo eliminado", "El insumo se elimin\xF3 correctamente");
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/insumos/${selectedInsumo.idInsumo}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        await fetchInsumos();
+        registrarEvento(
+          "eliminar",
+          nombre,
+          `Se eliminó del inventario el insumo: ${nombre}`
+        );
+        closeDelete();
+        notify.success("Insumo eliminado", "El insumo se eliminó correctamente");
+      } else {
+        notify.error("Error", "No se pudo eliminar el insumo");
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Fallo de conexión al eliminar el insumo");
+    }
   };
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -727,13 +830,12 @@ export function Insumos() {
                         : "border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     }`}
                   >
-                    <option value="1">Frutas</option>
-                    <option value="2">Verduras</option>
-                    <option value="3">Proteínas</option>
-                    <option value="4">Carbohidratos</option>
-                    <option value="5">Lácteos</option>
-                    <option value="6">Condimentos</option>
-                    <option value="7">Bebidas</option>
+                    <option value="">Seleccionar...</option>
+                    {categoriasData.map(cat => (
+                      <option key={cat.idCategoriaInsumo || cat.id} value={cat.idCategoriaInsumo || cat.id}>
+                        {cat.nombre}
+                      </option>
+                    ))}
                   </select>
                   {editFormSubmitted && !editInsumo?.idCategoriaInsumo && (
                     <p className="text-red-500 text-xs mt-1">campo obligatorio*</p>
@@ -805,12 +907,11 @@ export function Insumos() {
                   }`}
                 >
                   <option value="">Seleccionar proveedor...</option>
-                  <option value="1">FruVer SA</option>
-                  <option value="2">Carnes Premium</option>
-                  <option value="3">Avícola del Sur</option>
-                  <option value="4">Lácteos del Valle</option>
-                  <option value="5">Panadería El Trigo</option>
-                  <option value="7">Alimentos del Caribe</option>
+                  {proveedoresList.map(prov => (
+                    <option key={prov.idProveedor} value={prov.idProveedor}>
+                      {prov.nombre}
+                    </option>
+                  ))}
                 </select>
                 {editFormSubmitted && !editInsumo?.idProveedor && (
                   <p className="text-red-500 text-xs mt-1">campo obligatorio*</p>
@@ -1355,7 +1456,7 @@ export function Insumos() {
                               {cfg.label}
                             </span>
                             <span className="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate max-w-[200px]">
-                              {evento.insumoNombre}
+                              {evento.entidadNombre}
                             </span>
                           </div>
                           <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 shrink-0 whitespace-nowrap">
@@ -1436,13 +1537,11 @@ export function Insumos() {
                     }`}
                   >
                     <option value="">Seleccionar...</option>
-                    <option value="1">Frutas</option>
-                    <option value="2">Verduras</option>
-                    <option value="3">Proteínas</option>
-                    <option value="4">Carbohidratos</option>
-                    <option value="5">Lácteos</option>
-                    <option value="6">Condimentos</option>
-                    <option value="7">Bebidas</option>
+                    {categoriasData.map(cat => (
+                      <option key={cat.idCategoriaInsumo || cat.id} value={cat.idCategoriaInsumo || cat.id}>
+                        {cat.nombre}
+                      </option>
+                    ))}
                   </select>
                   {formSubmitted && !newInsumo.idCategoriaInsumo && (
                     <p className="text-red-500 text-xs mt-1">campo obligatorio*</p>
@@ -1516,11 +1615,11 @@ export function Insumos() {
                   }`}
                 >
                   <option value="">Seleccionar proveedor...</option>
-                  <option value="1">FruVer SA</option>
-                  <option value="2">Carnes Premium</option>
-                  <option value="3">Avícola del Sur</option>
-                  <option value="4">Lácteos del Valle</option>
-                  <option value="5">Panadería El Trigo</option>
+                  {proveedoresList.map(prov => (
+                    <option key={prov.idProveedor} value={prov.idProveedor}>
+                      {prov.nombre}
+                    </option>
+                  ))}
                 </select>
                 {formSubmitted && !newInsumo.idProveedor && (
                   <p className="text-red-500 text-xs mt-1">campo obligatorio*</p>
