@@ -36,12 +36,12 @@ async function run() {
     `);
     
     await conn.query(`
-      CREATE TABLE IF NOT EXISTS insumopreparado_detalle (
-        idDetalle INT AUTO_INCREMENT PRIMARY KEY, 
-        idPreparado INT NOT NULL, 
-        idInsumo INT NOT NULL, 
-        cantidad DECIMAL(10,2) NOT NULL, 
-        unidadMedida VARCHAR(30), 
+      CREATE TABLE IF NOT EXISTS detalleinsumopreparadoinsumo (
+        idDetalle INT AUTO_INCREMENT PRIMARY KEY,
+        idPreparado INT,
+        idInsumo INT,
+        cantidad DECIMAL(10, 2),
+        unidadMedida VARCHAR(20), 
         precioUnitario DECIMAL(10,2), 
         FOREIGN KEY (idPreparado) REFERENCES insumopreparado(id) ON DELETE CASCADE, 
         FOREIGN KEY (idInsumo) REFERENCES insumo(idInsumo) ON DELETE CASCADE

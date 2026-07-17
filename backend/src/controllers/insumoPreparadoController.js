@@ -43,9 +43,33 @@ const deletePreparado = async (req, res, next) => {
   }
 };
 
+const getDeletedPreparados = async (req, res, next) => {
+  try {
+    const preparados = await InsumoPreparadoModel.getDeleted();
+    res.json(preparados);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const restorePreparado = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const restored = await InsumoPreparadoModel.restore(id);
+    if (!restored) {
+      return res.status(404).json({ message: 'No encontrado' });
+    }
+    res.json({ message: 'Insumo preparado restaurado' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getPreparados,
   createPreparado,
   updatePreparado,
-  deletePreparado
+  deletePreparado,
+  getDeletedPreparados,
+  restorePreparado
 };

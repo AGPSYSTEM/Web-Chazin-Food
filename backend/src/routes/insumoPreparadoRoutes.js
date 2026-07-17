@@ -6,6 +6,9 @@ router.route('/')
   .get(insumoPreparadoController.getPreparados)
   .post(insumoPreparadoController.createPreparado);
 
+router.get('/deleted', insumoPreparadoController.getDeletedPreparados);
+router.put('/:id/restore', insumoPreparadoController.restorePreparado);
+
 router.route('/:id')
   .put(insumoPreparadoController.updatePreparado)
   .delete(insumoPreparadoController.deletePreparado);
