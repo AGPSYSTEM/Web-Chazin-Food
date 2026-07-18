@@ -1,5 +1,30 @@
 const connectDB = require('../config/db');
 
+// Auto-migrate: ensure insumo table has required columns
+const initInsumoTable = async () => {
+  try {
+    const [columns] = await connectDB.pool.query('SHOW COLUMNS FROM insumo');
+    const columnNames = columns.map(c => c.Field.toLowerCase());
+
+    if (!columnNames.includes('preciounitario')) {
+      await connectDB.pool.query('ALTER TABLE insumo ADD COLUMN precioUnitario DECIMAL(10,2) DEFAULT 0');
+      console.log('Added precioUnitario to insumo table');
+    }
+    if (!columnNames.includes('idproveedor')) {
+      await connectDB.pool.query('ALTER TABLE insumo ADD COLUMN idProveedor INT DEFAULT NULL');
+      console.log('Added idProveedor to insumo table');
+    }
+    if (!columnNames.includes('descripcion')) {
+      await connectDB.pool.query("ALTER TABLE insumo ADD COLUMN descripcion VARCHAR(255) DEFAULT NULL");
+      console.log('Added descripcion to insumo table');
+    }
+  } catch (err) {
+    // Table may not exist yet, skip silently
+    console.error('Insumo migration check skipped:', err.message);
+  }
+};
+initInsumoTable();
+
 class InsumoModel {
   static async getAll() {
     const connection = await connectDB.pool.getConnection();

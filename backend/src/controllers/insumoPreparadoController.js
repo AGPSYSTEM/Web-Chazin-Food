@@ -65,11 +65,28 @@ const restorePreparado = async (req, res, next) => {
   }
 };
 
+const permanentDeletePreparado = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const deleted = await InsumoPreparadoModel.permanentDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Insumo preparado no encontrado' });
+    }
+    res.json({ message: 'Insumo preparado eliminado permanentemente' });
+  } catch (error) {
+    if (error.message === 'NOT_IN_TRASH') {
+      return res.status(400).json({ message: 'Solo se pueden eliminar permanentemente preparados que estén en la papelera' });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   getPreparados,
   createPreparado,
   updatePreparado,
   deletePreparado,
   getDeletedPreparados,
-  restorePreparado
+  restorePreparado,
+  permanentDeletePreparado
 };

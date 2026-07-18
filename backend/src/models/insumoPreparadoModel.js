@@ -254,6 +254,29 @@ class InsumoPreparadoModel {
       connection.release();
     }
   }
+
+  static async permanentDelete(id) {
+    const connection = await connectDB.pool.getConnection();
+    await connection.beginTransaction();
+    try {
+      const [check] = await connection.query('SELECT estado FROM insumopreparado WHERE id = ?', [id]);
+      if (check.length === 0) return false;
+      if (check[0].estado !== 0) {
+        throw new Error('NOT_IN_TRASH');
+      }
+
+      await connection.query('DELETE FROM detalleinsumopreparadoinsumo WHERE idPreparado = ?', [id]);
+      const [result] = await connection.query('DELETE FROM insumopreparado WHERE id = ? AND estado = 0', [id]);
+      
+      await connection.commit();
+      return result.affectedRows > 0;
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = InsumoPreparadoModel;
