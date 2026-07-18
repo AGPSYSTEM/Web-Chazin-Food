@@ -12,15 +12,23 @@ const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood');
 
+<<<<<<< HEAD
+      // Get user from database (decoded.id is stored in jwt)
+=======
       // Get user from database
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
       const user = await User.findById(decoded.id);
 
       if (!user) {
         return res.status(401).json({ message: 'No autorizado, usuario no encontrado' });
       }
 
+<<<<<<< HEAD
+      if (user.estado === 'INACTIVO') {
+=======
       // Check if user is active
       if (user.estado === 0) {
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
         return res.status(401).json({ message: 'No autorizado, esta cuenta ha sido desactivada' });
       }
 
@@ -45,7 +53,11 @@ const authorize = (...roles) => {
     if (req.user && req.user.rol) {
       const userRol = req.user.rol.toLowerCase();
       const allowedRoles = roles.map(role => role.toLowerCase());
+<<<<<<< HEAD
+
+=======
       
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
       if (allowedRoles.includes(userRol)) {
         next();
       } else {

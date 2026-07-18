@@ -1,20 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Edit, Trash2, X, AlertTriangle } from "lucide-react";
 import { useNotifications } from "@/domain/hooks/useNotifications";
-const categoriasData = [
-  { id: 1, nombre: "Frutas", descripcion: "Frutas frescas y congeladas", cantidad: 12, estado: "Activo" },
-  { id: 2, nombre: "Verduras", descripcion: "Verduras y vegetales", cantidad: 18, estado: "Activo" },
-  { id: 3, nombre: "Prote\xEDnas", descripcion: "Carnes, pollo, pescado", cantidad: 8, estado: "Activo" },
-  { id: 4, nombre: "Carbohidratos", descripcion: "Panes, harinas, pastas", cantidad: 15, estado: "Activo" },
-  { id: 5, nombre: "L\xE1cteos", descripcion: "Leche, quesos, mantequilla", cantidad: 10, estado: "Activo" },
-  { id: 6, nombre: "Condimentos", descripcion: "Salsas, especias, aderezos", cantidad: 25, estado: "Activo" },
-  { id: 7, nombre: "Bebidas", descripcion: "Gaseosas, jugos, agua", cantidad: 14, estado: "Activo" },
-  { id: 8, nombre: "Congelados", descripcion: "Productos congelados", cantidad: 6, estado: "Inactivo" }
-];
-const insumosPorCategoria = { 1: 3, 2: 4, 3: 3, 4: 3, 5: 2, 6: 4, 7: 3, 8: 1 };
+
 export function CategoriaInsumos() {
   const notify = useNotifications();
-  const [categorias, setCategorias] = useState(categoriasData);
+  const [categorias, setCategorias] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -43,31 +33,109 @@ export function CategoriaInsumos() {
     setShowDeleteModal(false);
     setSelectedCategoria(null);
   };
-  const handleGuardarNueva = () => {
+  const fetchCategorias = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/categorias-insumo');
+      if (response.ok) {
+        const data = await response.json();
+        setCategorias(data);
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Fallo de conexión al cargar categorías");
+    }
+  };
+
+  useEffect(() => {
+    fetchCategorias();
+  }, []);
+
+  const registrarTrazabilidad = async (tipo, entidadNombre, detalle) => {
+    try {
+      await fetch('http://localhost:5000/api/trazabilidad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo, entidadNombre, detalle })
+      });
+    } catch (error) {
+      console.error('Error al registrar trazabilidad:', error);
+    }
+  };
+
+  const handleGuardarNueva = async () => {
     setNuevaFormSubmitted(true);
     if (!formNueva.nombre.trim()) return;
-    const nextId = categorias.length ? Math.max(...categorias.map((c) => c.id)) + 1 : 1;
-    setCategorias([...categorias, { id: nextId, nombre: formNueva.nombre.trim(), descripcion: formNueva.descripcion.trim(), cantidad: 0, estado: formNueva.estado }]);
-    setFormNueva({ nombre: "", descripcion: "", estado: "Activo" });
-    setShowModal(false);
-    setNuevaFormSubmitted(false);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/categorias-insumo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formNueva)
+      });
+      if (response.ok) {
+        await fetchCategorias();
+        setFormNueva({ nombre: "", descripcion: "", estado: "Activo" });
+        setShowModal(false);
+        setNuevaFormSubmitted(false);
+        await registrarTrazabilidad("crear", formNueva.nombre, `Se creó una nueva categoría en el inventario: ${formNueva.nombre}`);
+        notify.success("Categoría creada", "La categoría se creó exitosamente");
+      } else {
+        notify.error("Error", "No se pudo guardar la categoría");
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Fallo de conexión al guardar categoría");
+    }
   };
-  const handleGuardarEdit = () => {
+
+  const handleGuardarEdit = async () => {
     setEditFormSubmitted(true);
     if (!selectedCategoria || !formEdit.nombre.trim()) return;
-    setCategorias(categorias.map((c) => c.id === selectedCategoria.id ? { ...c, nombre: formEdit.nombre.trim(), descripcion: formEdit.descripcion.trim(), estado: formEdit.estado } : c));
-    closeEdit();
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/categorias-insumo/${selectedCategoria.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formEdit)
+      });
+      if (response.ok) {
+        await fetchCategorias();
+        closeEdit();
+        await registrarTrazabilidad("editar", formEdit.nombre, `Se actualizaron los datos de la categoría: ${formEdit.nombre}`);
+        notify.success("Categoría actualizada", "La categoría se actualizó exitosamente");
+      } else {
+        notify.error("Error", "No se pudo actualizar la categoría");
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Fallo de conexión al actualizar categoría");
+    }
   };
-  const handleEliminar = () => {
+
+  const handleEliminar = async () => {
     if (!selectedCategoria) return;
-    const cantidadInsumos = insumosPorCategoria[selectedCategoria.id] || selectedCategoria.cantidad || 0;
+    const cantidadInsumos = selectedCategoria.cantidad || 0;
     if (cantidadInsumos > 0) {
-      notify.error("No se puede eliminar", "No es posible eliminar esta categor\xEDa porque existen insumos asociados a ella.");
+      notify.error("No se puede eliminar", "No es posible eliminar esta categoría porque existen insumos asociados a ella.");
       return;
     }
-    setCategorias(categorias.filter((c) => c.id !== selectedCategoria.id));
-    notify.success("Categoría eliminada", `La categoría "${selectedCategoria.nombre}" ha sido eliminada exitosamente.`);
-    closeDelete();
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/categorias-insumo/${selectedCategoria.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        await fetchCategorias();
+        await registrarTrazabilidad("eliminar", selectedCategoria.nombre, `Se eliminó del inventario la categoría: ${selectedCategoria.nombre}`);
+        notify.success("Categoría eliminada", `La categoría "${selectedCategoria.nombre}" ha sido eliminada exitosamente.`);
+        closeDelete();
+      } else {
+        notify.error("Error", "No se pudo eliminar la categoría");
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("Error", "Fallo de conexión al eliminar categoría");
+    }
   };
   const categoriasFiltradas = categorias.filter(
     (c) => c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || c.descripcion.toLowerCase().includes(searchTerm.toLowerCase())

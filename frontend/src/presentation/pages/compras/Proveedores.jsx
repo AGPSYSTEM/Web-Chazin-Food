@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pagination } from "@/presentation/components/common/Pagination";
 import {
   Plus,
@@ -147,7 +147,7 @@ function descargarReporte(p) {
 const inputCls = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition";
 const labelCls = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 export function Proveedores() {
-  const [proveedoresData, setProveedoresData] = useState(proveedoresDataInitial);
+  const [proveedoresData, setProveedoresData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("Todos");
   const [filterTipo, setFilterTipo] = useState("Todos");
@@ -160,6 +160,43 @@ export function Proveedores() {
   const [expandirHistorial, setExpandirHistorial] = useState(false);
   const emptyForm = { nombre: "", nit: "", telefono: "", email: "", direccion: "", tipoPersona: "Jurídica", nombreContacto: "", estado: "Activo" };
   const [form, setForm] = useState(emptyForm);
+
+  const fetchProveedores = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/proveedores');
+      if (response.ok) {
+        const data = await response.json();
+        // map idProveedor, nombre, numeroDocumento as nit, correo as email, etc.
+        setProveedoresData(data.map(p => ({
+          ...p,
+          nit: p.numeroDocumento || '',
+          email: p.correo || '',
+          estado: p.estado ? 'Activo' : 'Inactivo',
+          tipoPersona: p.tipoPersona || 'Jurídica',
+          nombreContacto: p.nombreContacto || 'N/A'
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching proveedores:', error);
+    }
+  };
+
+  const registrarTrazabilidad = async (tipo, entidadNombre, detalle) => {
+    try {
+      await fetch('http://localhost:5000/api/trazabilidad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo, entidadNombre, detalle })
+      });
+    } catch (error) {
+      console.error('Error al registrar trazabilidad:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProveedores();
+  }, []);
+
   const openNew = () => {
     setSelectedProveedor(null);
     setForm(emptyForm);
@@ -182,25 +219,73 @@ export function Proveedores() {
     setExpandirHistorial(false);
     setShowActividadModal(true);
   };
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     setFormSubmitted(true);
     if (!form.nombre.trim() || !form.nit.trim()) return;
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return;
-    if (selectedProveedor) {
-      setProveedoresData((prev) => prev.map((p) => p.idProveedor === selectedProveedor.idProveedor ? { ...p, ...form } : p));
-    } else {
-      const nextId = Math.max(...proveedoresData.map((p) => p.idProveedor), 0) + 1;
-      setProveedoresData((prev) => [...prev, { idProveedor: nextId, ...form }]);
+    
+    const payload = {
+      nombre: form.nombre,
+      numeroDocumento: form.nit,
+      telefono: form.telefono,
+      correo: form.email,
+      direccion: form.direccion,
+      tipoPersona: form.tipoPersona,
+      estado: form.estado,
+      nombreContacto: form.nombreContacto
+    };
+
+    try {
+      if (selectedProveedor) {
+        const response = await fetch(`http://localhost:5000/api/proveedores/${selectedProveedor.idProveedor}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          await fetchProveedores();
+          await registrarTrazabilidad('editar', form.nombre, `Se modificó la información del proveedor: ${form.nombre}`);
+        }
+      } else {
+        const response = await fetch('http://localhost:5000/api/proveedores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          await fetchProveedores();
+          await registrarTrazabilidad('crear', form.nombre, `Se registró un nuevo proveedor en el sistema: ${form.nombre}`);
+        }
+      }
+      setShowFormModal(false);
+      setFormSubmitted(false);
+    } catch (e) {
+      console.error(e);
     }
-    setShowFormModal(false);
-    setFormSubmitted(false);
   };
-  const handleInactivar = () => {
+
+  const handleInactivar = async () => {
     if (!selectedProveedor) return;
-    setProveedoresData((prev) => prev.map(
-      (p) => p.idProveedor === selectedProveedor.idProveedor ? { ...p, estado: "Inactivo" } : p
-    ));
-    setShowDeleteModal(false);
+    try {
+      const payload = {
+        ...selectedProveedor,
+        numeroDocumento: selectedProveedor.nit,
+        correo: selectedProveedor.email,
+        estado: 'Inactivo'
+      };
+      const response = await fetch(`http://localhost:5000/api/proveedores/${selectedProveedor.idProveedor}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        await fetchProveedores();
+        await registrarTrazabilidad('eliminar', selectedProveedor.nombre, `Se inactivó al proveedor: ${selectedProveedor.nombre}`);
+      }
+      setShowDeleteModal(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
   const filtered = proveedoresData.filter((p) => {
     const t = searchTerm.trim().toLowerCase();
