@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood', {
+const generateToken = (idUsuario) => {
+  return jwt.sign({ id: idUsuario }, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood', {
     expiresIn: '30d',
   });
 };
@@ -12,9 +12,36 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
-    const { nombre, correo, contrase\u00f1a, rol } = req.body;
+    const {
+      nombre,
+      apellidos,
+      apellido,
+      tipoDocumento,
+      documento,
+      telefono,
+      email,
+      correo,
+      contrasena,
+      contraseña,
+      password,
+      idRol,
+      rol_id,
+      id_rol,
+      rol
+    } = req.body;
 
-    const userExists = await User.findOne({ correo });
+    const targetEmail = email || correo;
+    const targetPassword = contrasena || contraseña || password;
+    const targetApellidos = apellidos || apellido;
+    const targetDocumento = tipoDocumento || documento;
+    const targetRolId = idRol || rol_id || id_rol;
+
+    if (!nombre || !targetEmail || !targetPassword) {
+      res.status(400);
+      throw new Error('Por favor ingrese todos los campos requeridos (nombre, email, contrasena)');
+    }
+
+    const userExists = await User.findOne({ email: targetEmail });
 
     if (userExists) {
       res.status(400);
@@ -23,18 +50,28 @@ const registerUser = async (req, res, next) => {
 
     const user = await User.create({
       nombre,
-      correo,
-      contrase\u00f1a,
-      rol: rol || 'cliente',
+      apellidos: targetApellidos,
+      tipoDocumento: targetDocumento,
+      telefono,
+      email: targetEmail,
+      contrasena: targetPassword,
+      idRol: targetRolId,
+      rol,
+      estado: 'ACTIVO'
     });
 
     if (user) {
       res.status(201).json({
-        _id: user._id,
+        idUsuario: user.idUsuario,
         nombre: user.nombre,
-        correo: user.correo,
+        apellidos: user.apellidos,
+        tipoDocumento: user.tipoDocumento,
+        telefono: user.telefono,
+        email: user.email,
+        estado: user.estado,
+        idRol: user.idRol,
         rol: user.rol,
-        token: generateToken(user._id),
+        token: generateToken(user.idUsuario),
       });
     } else {
       res.status(400);
@@ -50,17 +87,41 @@ const registerUser = async (req, res, next) => {
 // @access  Public
 const authUser = async (req, res, next) => {
   try {
-    const { correo, contrase\u00f1a } = req.body;
+    const { email, correo, contrasena, contraseña, password } = req.body;
 
-    const user = await User.findOne({ correo });
+    const targetEmail = email || correo;
+    const targetPassword = contrasena || contraseña || password;
 
-    if (user && (await user.matchPassword(contrase\u00f1a))) {
+    if (!targetEmail || !targetPassword) {
+      res.status(400);
+      throw new Error('Por favor ingrese email y contraseña');
+    }
+
+    const user = await User.findOne({ email: targetEmail });
+
+    if (!user) {
+      res.status(401);
+      throw new Error('Correo o contraseña incorrectos');
+    }
+
+    if (user.estado === 'INACTIVO') {
+      res.status(401);
+      throw new Error('Esta cuenta ha sido desactivada');
+    }
+
+    const isMatch = await user.matchPassword(targetPassword);
+    if (isMatch) {
       res.json({
-        _id: user._id,
+        idUsuario: user.idUsuario,
         nombre: user.nombre,
-        correo: user.correo,
+        apellidos: user.apellidos,
+        tipoDocumento: user.tipoDocumento,
+        telefono: user.telefono,
+        email: user.email,
+        estado: user.estado,
+        idRol: user.idRol,
         rol: user.rol,
-        token: generateToken(user._id),
+        token: generateToken(user.idUsuario),
       });
     } else {
       res.status(401);
@@ -76,13 +137,18 @@ const authUser = async (req, res, next) => {
 // @access  Private
 const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user.idUsuario);
 
     if (user) {
       res.json({
-        _id: user._id,
+        idUsuario: user.idUsuario,
         nombre: user.nombre,
-        correo: user.correo,
+        apellidos: user.apellidos,
+        tipoDocumento: user.tipoDocumento,
+        telefono: user.telefono,
+        email: user.email,
+        estado: user.estado,
+        idRol: user.idRol,
         rol: user.rol,
       });
     } else {

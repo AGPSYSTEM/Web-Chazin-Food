@@ -61,6 +61,52 @@ const deleteInsumo = async (req, res, next) => {
     
     res.json({ message: 'Insumo eliminado correctamente' });
   } catch (error) {
+    if (error.message === 'IN_USE') {
+      return res.status(400).json({ message: 'No se puede eliminar el insumo porque está siendo utilizado en un insumo preparado' });
+    }
+    next(error);
+  }
+};
+
+const getDeletedInsumos = async (req, res, next) => {
+  try {
+    const insumos = await InsumoModel.getDeleted();
+    res.json(insumos);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const restoreInsumo = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const restored = await InsumoModel.restore(id);
+    
+    if (!restored) {
+      return res.status(404).json({ message: 'Insumo no encontrado' });
+    }
+    
+    const restoredInsumo = await InsumoModel.getById(id);
+    res.json({ message: 'Insumo restaurado correctamente', data: restoredInsumo });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const permanentDeleteInsumo = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const deleted = await InsumoModel.permanentDelete(id);
+    
+    if (!deleted) {
+      return res.status(404).json({ message: 'Insumo no encontrado' });
+    }
+    
+    res.json({ message: 'Insumo eliminado permanentemente' });
+  } catch (error) {
+    if (error.message === 'NOT_IN_TRASH') {
+      return res.status(400).json({ message: 'Solo se pueden eliminar permanentemente insumos que estén en la papelera' });
+    }
     next(error);
   }
 };
@@ -70,5 +116,8 @@ module.exports = {
   getInsumoById,
   createInsumo,
   updateInsumo,
-  deleteInsumo
+  deleteInsumo,
+  getDeletedInsumos,
+  restoreInsumo,
+  permanentDeleteInsumo
 };

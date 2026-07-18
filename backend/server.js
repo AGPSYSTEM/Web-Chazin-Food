@@ -30,7 +30,10 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/auth', require('./src/routes/authRoutes'));
+<<<<<<< HEAD
+=======
 app.use('/api/categories', require('./src/routes/categoryRoutes'));
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
 app.use('/api/users', require('./src/routes/userRoutes'));
 app.use('/api/products', require('./src/routes/productRoutes'));
 app.use('/api/orders', require('./src/routes/orderRoutes'));

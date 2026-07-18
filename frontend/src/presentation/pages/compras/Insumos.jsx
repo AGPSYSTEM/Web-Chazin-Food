@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, AlertCircle, Package, X, TrendingDown, Bell, CheckCircle2, PlusCircle, Pencil, Clock, Filter, Trash, FlaskConical, ChevronDown, ChevronUp, Minus } from "lucide-react";
+import { Plus, Search, Edit, Trash2, AlertCircle, Package, X, TrendingDown, Bell, CheckCircle2, PlusCircle, Pencil, Clock, Filter, Trash, FlaskConical, ChevronDown, ChevronUp, Minus, RotateCcw } from "lucide-react";
 import { Pagination } from "@/presentation/components/common/Pagination";
 import { FichaTecnicaInsumo } from "@/presentation/pages/fichasTecnicas/FichaTecnicaInsumo";
 import { useNotifications } from "@/domain/hooks/useNotifications";
 const tipoConfig = {
   crear: { label: "Creado", icon: <PlusCircle className="w-4 h-4" />, bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-400", dot: "bg-green-500" },
   editar: { label: "Editado", icon: <Pencil className="w-4 h-4" />, bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-400", dot: "bg-blue-500" },
-  eliminar: { label: "Eliminado", icon: <Trash className="w-4 h-4" />, bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" }
+  eliminar: { label: "Eliminado", icon: <Trash className="w-4 h-4" />, bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" },
+  restaurar: { label: "Restaurado", icon: <RotateCcw className="w-4 h-4" />, bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-400", dot: "bg-purple-500" }
 };
 const insumosDataInitial = [
   { idInsumo: 1, nombre: "Tomate", idCategoriaInsumo: 2, categoriaNombre: "Verduras", stockActual: 45, unidadMedida: "kg", precioUnitario: 3500, stock: "Normal", idProveedor: 1, proveedorNombre: "FruVer SA" },
@@ -54,11 +55,113 @@ export function Insumos() {
       const response = await fetch('http://localhost:5000/api/insumos-preparados');
       if (response.ok) {
         const data = await response.json();
-        setInsumosPreparados(data);
+        const dataWithCosto = data.map(prep => {
+          const costoTotal = prep.componentes ? prep.componentes.reduce((s, c) => s + (c.cantidad * c.precioUnitario), 0) : 0;
+          return { ...prep, costoTotal };
+        });
+        setInsumosPreparados(dataWithCosto);
       }
     } catch (error) {
       console.error('Error fetching preparados:', error);
       notify.error('Error', 'No se pudieron cargar los insumos preparados');
+    }
+  };
+
+  const [viewMode, setViewMode] = useState("activos"); // "activos" o "papelera"
+  const [deletedInsumos, setDeletedInsumos] = useState([]);
+  const [deletedPreparados, setDeletedPreparados] = useState([]);
+
+  const fetchDeleted = async () => {
+    try {
+      const resIns = await fetch('http://localhost:5000/api/insumos/deleted');
+      if (resIns.ok) {
+        const data = await resIns.json();
+        setDeletedInsumos(data.map(i => ({
+          ...i,
+          stockActual: Number(i.stock),
+          precioUnitario: Number(i.precioUnitario || 0),
+          categoriaNombre: i.categoriaNombre || 'Sin Categoría',
+          proveedorNombre: i.proveedorNombre || 'Sin Proveedor'
+        })));
+      }
+      const resPrep = await fetch('http://localhost:5000/api/insumos-preparados/deleted');
+      if (resPrep.ok) {
+        const data = await resPrep.json();
+        const dataWithCosto = data.map(prep => {
+          const costoTotal = prep.componentes ? prep.componentes.reduce((s, c) => s + (c.cantidad * c.precioUnitario), 0) : 0;
+          return { ...prep, costoTotal };
+        });
+        setDeletedPreparados(dataWithCosto);
+      }
+    } catch (e) {
+      console.error('Error fetching deleted:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (viewMode === 'papelera') {
+      fetchDeleted();
+    }
+  }, [viewMode]);
+
+  const handleRestoreInsumo = async (id, nombre) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/insumos/${id}/restore`, { method: 'PUT' });
+      if (response.ok) {
+        notify.success("Restaurado", `Insumo "${nombre}" fue restaurado exitosamente`);
+        registrarEvento(
+          "restaurar",
+          nombre,
+          `Se restauró el insumo: ${nombre} desde la papelera`
+        );
+        fetchInsumos();
+        fetchDeleted();
+      }
+    } catch (e) {
+      console.error(e);
+      notify.error("Error", "Error al restaurar");
+    }
+  };
+
+  const handleRestorePreparado = async (id, nombre) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/insumos-preparados/${id}/restore`, { method: 'PUT' });
+      if (response.ok) {
+        notify.success("Restaurado", `Preparado "${nombre}" fue restaurado exitosamente`);
+        registrarEvento(
+          "restaurar",
+          nombre,
+          `Se restauró el insumo preparado: ${nombre} desde la papelera`
+        );
+        fetchPreparados();
+        fetchDeleted();
+      }
+    } catch (e) {
+      console.error(e);
+      notify.error("Error", "Error al restaurar");
+    }
+  };
+
+  const handlePermanentDeleteInsumo = async (id, nombre) => {
+    const ok = await notify.confirmDelete("¿Eliminar permanentemente?", `¿Estás seguro de eliminar permanentemente "${nombre}"? Esta acción no se puede deshacer.`);
+    if (!ok) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/insumos/${id}/permanent`, { method: 'DELETE' });
+      if (response.ok) {
+        notify.success("Eliminado", `"${nombre}" fue eliminado permanentemente`);
+        registrarEvento(
+          "eliminar",
+          nombre,
+          `Se eliminó permanentemente el insumo: ${nombre}`
+        );
+        fetchDeleted();
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        notify.error("Error", errData.message || "No se pudo eliminar permanentemente");
+      }
+    } catch (e) {
+      console.error(e);
+      notify.error("Error", "Error al eliminar permanentemente");
     }
   };
 
@@ -179,8 +282,7 @@ export function Insumos() {
     const base = {
       nombre: formPreparado.nombre.trim(),
       descripcion: formPreparado.descripcion.trim(),
-      rendimiento: 1,
-      unidadRendimiento: formPreparado.unidadMedida || "und",
+      unidadMedida: formPreparado.unidadMedida || "und",
       precioVenta: parseFloat(formPreparado.precioVenta) || 0,
       componentes: formPreparado.componentes,
       costoTotal: costoFormPreparado
@@ -251,7 +353,7 @@ export function Insumos() {
       nombre: prep.nombre,
       descripcion: prep.descripcion,
       precioVenta: String(prep.precioVenta ?? ""),
-      unidadMedida: prep.unidadRendimiento,
+      unidadMedida: prep.unidadMedida,
       componentes: prep.componentes.map((c) => ({ ...c }))
     });
     setSearchInsumoComp("");
@@ -403,7 +505,8 @@ export function Insumos() {
         closeDelete();
         notify.success("Insumo eliminado", "El insumo se eliminó correctamente");
       } else {
-        notify.error("Error", "No se pudo eliminar el insumo");
+        const errData = await response.json().catch(() => ({}));
+        notify.error("Error", errData.message || "No se pudo eliminar el insumo");
       }
     } catch (error) {
       console.error(error);
@@ -558,27 +661,100 @@ export function Insumos() {
     /* Fila 2: botones de acción */
   }
         <div className="flex gap-2">
-          <button
-    onClick={() => {
-      setFormPreparado(emptyPreparado);
-      setSearchInsumoComp("");
-      setShowModalPreparado(true);
-    }}
-    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#30475E] text-white rounded-xl hover:bg-[#253a4e] active:scale-95 transition-all font-medium text-sm shadow-sm"
-  >
-            <FlaskConical className="w-4 h-4 shrink-0" />
-            <span>Insumo Preparado</span>
-          </button>
-          <button
-    onClick={() => setShowModal(true)}
-    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#F05454] text-white rounded-xl hover:bg-red-600 active:scale-95 transition-all font-medium text-sm shadow-sm"
-  >
-            <Plus className="w-4 h-4 shrink-0" />
-            <span>Nuevo Insumo</span>
-          </button>
+          {viewMode === "activos" ? (
+            <>
+              <button
+                onClick={() => {
+                  setFormPreparado(emptyPreparado);
+                  setSearchInsumoComp("");
+                  setShowModalPreparado(true);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#30475E] text-white rounded-xl hover:bg-[#253a4e] active:scale-95 transition-all font-medium text-sm shadow-sm"
+              >
+                <FlaskConical className="w-4 h-4 shrink-0" />
+                <span>Insumo Preparado</span>
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#F05454] text-white rounded-xl hover:bg-red-600 active:scale-95 transition-all font-medium text-sm shadow-sm"
+              >
+                <Plus className="w-4 h-4 shrink-0" />
+                <span>Nuevo Insumo</span>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setViewMode("activos")}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl hover:bg-blue-200 active:scale-95 transition-all font-medium text-sm shadow-sm"
+            >
+              <Package className="w-4 h-4 shrink-0" />
+              <span>Volver a Activos</span>
+            </button>
+          )}
         </div>
       </div>
+      
+      {viewMode === "papelera" && (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 p-4 sm:p-6 mb-4">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-gray-500" /> Papelera de Reciclaje
+          </h2>
+          
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-3 border-b pb-2 dark:border-gray-700">Insumos Eliminados</h3>
+              {deletedInsumos.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 italic">No hay insumos en la papelera.</p>
+              ) : (
+                <div className="space-y-2">
+                  {deletedInsumos.map(ins => (
+                    <div key={ins.idInsumo} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                      <div>
+                        <p className="font-medium text-gray-800 dark:text-gray-200">{ins.nombre}</p>
+                        <p className="text-xs text-gray-500">{ins.categoriaNombre} • {ins.unidadMedida}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleRestoreInsumo(ins.idInsumo, ins.nombre)} className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors flex items-center gap-1">
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Restaurar
+                        </button>
+                        <button onClick={() => handlePermanentDeleteInsumo(ins.idInsumo, ins.nombre)} className="px-3 py-1.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-sm font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors flex items-center gap-1">
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
+            <div>
+              <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-3 border-b pb-2 dark:border-gray-700">Insumos Preparados Eliminados</h3>
+              {deletedPreparados.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 italic">No hay preparados en la papelera.</p>
+              ) : (
+                <div className="space-y-2">
+                  {deletedPreparados.map(prep => (
+                    <div key={prep.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                      <div>
+                        <p className="font-medium text-gray-800 dark:text-gray-200">{prep.nombre}</p>
+                        <p className="text-xs text-gray-500">Costo Total: ${prep.costoTotal.toLocaleString()}</p>
+                      </div>
+                      <button onClick={() => handleRestorePreparado(prep.id, prep.nombre)} className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors">
+                        Restaurar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewMode === "activos" && (
+        <>
       {
     /* ── Insumos Preparados ─────────────────────────────────────────────── */
   }
@@ -623,8 +799,8 @@ export function Insumos() {
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <div className="text-right">
-                        <p className="font-bold text-[#30475E] dark:text-blue-300 text-sm">${prep.precioVenta ? prep.precioVenta.toLocaleString() : prep.costoTotal.toLocaleString()}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">por {prep.unidadRendimiento}</p>
+                        <p className="font-bold text-[#30475E] dark:text-blue-300 text-sm">${prep.precioVenta ? prep.precioVenta.toLocaleString() : prep.costoTotal?.toLocaleString()}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">por {prep.unidadMedida}</p>
                       </div>
                       <div className="flex gap-1">
                         <button
@@ -1306,7 +1482,7 @@ export function Insumos() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-[#30475E]/5 dark:bg-[#30475E]/20 rounded-xl p-3 text-center">
                   <p className="text-xs text-[#30475E] dark:text-blue-400 mb-0.5">Unidad de medida</p>
-                  <p className="font-bold text-[#30475E] dark:text-blue-300">{preparadoDetalle.unidadRendimiento}</p>
+                  <p className="font-bold text-[#30475E] dark:text-blue-300">{preparadoDetalle.unidadMedida}</p>
                 </div>
                 <div className="bg-[#30475E]/5 dark:bg-[#30475E]/20 rounded-xl p-3 text-center">
                   <p className="text-xs text-[#30475E] dark:text-blue-400 mb-0.5">Precio de venta</p>
@@ -1388,16 +1564,26 @@ export function Insumos() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowBandeja(false);
+                    setViewMode("papelera");
+                  }}
+                  className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg flex items-center gap-1 transition-colors font-medium"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Papelera
+                </button>
                 {eventos.length > 0 && <button
-    onClick={limpiarBandeja}
-    className="text-xs px-3 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors font-medium"
-  >
+                  onClick={limpiarBandeja}
+                  className="text-xs px-3 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors font-medium"
+                >
                     Limpiar todo
                   </button>}
                 <button
-    onClick={() => setShowBandeja(false)}
-    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-  >
+                  onClick={() => setShowBandeja(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
@@ -1408,7 +1594,7 @@ export function Insumos() {
   }
             <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 shrink-0 overflow-x-auto">
               <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-              {["todos", "crear", "editar", "eliminar"].map((tipo) => <button
+              {["todos", "crear", "editar", "eliminar", "restaurar"].map((tipo) => <button
     key={tipo}
     onClick={() => setFiltroBandeja(tipo)}
     className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filtroBandeja === tipo ? "bg-[#30475E] text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
@@ -1431,7 +1617,7 @@ export function Insumos() {
                     {filtroBandeja === "todos" ? "Los cambios a los insumos aparecer\xE1n aqu\xED" : `No hay eventos de tipo "${tipoConfig[filtroBandeja].label}"`}
                   </p>
                 </div> : eventosFiltrados.map((evento) => {
-    const cfg = tipoConfig[evento.tipo];
+    const cfg = tipoConfig[evento.tipo] || tipoConfig.crear;
     return <div
       key={evento.id}
       className="flex gap-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 transition-colors"
@@ -1488,6 +1674,7 @@ export function Insumos() {
             </div>
           </div>
         </div>}
+
 
       {
     /* New Insumo Modal */
@@ -1656,5 +1843,7 @@ export function Insumos() {
             </div>
           </div>
         </div>}
+        </>
+      )}
     </div>;
 }

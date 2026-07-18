@@ -9,6 +9,23 @@ class InsumoModel {
           COALESCE((SELECT nombre FROM categoriainsumo c WHERE c.idCategoriaInsumo = i.idCategoriaInsumo), 'Sin Categoría') as categoriaNombre,
           COALESCE((SELECT nombre FROM proveedor p WHERE p.idProveedor = i.idProveedor), 'Sin Proveedor') as proveedorNombre
         FROM insumo i
+        WHERE i.estado = 1
+      `);
+      return rows;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async getDeleted() {
+    const connection = await connectDB.pool.getConnection();
+    try {
+      const [rows] = await connection.query(`
+        SELECT i.*, 
+          COALESCE((SELECT nombre FROM categoriainsumo c WHERE c.idCategoriaInsumo = i.idCategoriaInsumo), 'Sin Categoría') as categoriaNombre,
+          COALESCE((SELECT nombre FROM proveedor p WHERE p.idProveedor = i.idProveedor), 'Sin Proveedor') as proveedorNombre
+        FROM insumo i
+        WHERE i.estado = 0
       `);
       return rows;
     } finally {
@@ -80,7 +97,39 @@ class InsumoModel {
   static async delete(idInsumo) {
     const connection = await connectDB.pool.getConnection();
     try {
-      const [result] = await connection.query('DELETE FROM insumo WHERE idInsumo = ?', [idInsumo]);
+      const [usage] = await connection.query('SELECT COUNT(*) as count FROM detalleinsumopreparadoinsumo WHERE idInsumo = ?', [idInsumo]);
+      if (usage[0].count > 0) {
+        throw new Error('IN_USE');
+      }
+
+      const [result] = await connection.query('UPDATE insumo SET estado = 0 WHERE idInsumo = ?', [idInsumo]);
+      return result.affectedRows > 0;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async restore(idInsumo) {
+    const connection = await connectDB.pool.getConnection();
+    try {
+      const [result] = await connection.query('UPDATE insumo SET estado = 1 WHERE idInsumo = ?', [idInsumo]);
+      return result.affectedRows > 0;
+    } finally {
+      connection.release();
+    }
+  }
+
+  static async permanentDelete(idInsumo) {
+    const connection = await connectDB.pool.getConnection();
+    try {
+      // Only allow permanent deletion of items already in the trash (estado = 0)
+      const [check] = await connection.query('SELECT estado FROM insumo WHERE idInsumo = ?', [idInsumo]);
+      if (check.length === 0) return false;
+      if (check[0].estado !== 0) {
+        throw new Error('NOT_IN_TRASH');
+      }
+
+      const [result] = await connection.query('DELETE FROM insumo WHERE idInsumo = ? AND estado = 0', [idInsumo]);
       return result.affectedRows > 0;
     } finally {
       connection.release();
