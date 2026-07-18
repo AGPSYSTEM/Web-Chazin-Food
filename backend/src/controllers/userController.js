@@ -7,12 +7,13 @@ const generateToken = (idUsuario) => {
   });
 };
 
-// @desc    Register a new user
+// @desc    Register a new client user
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
     const {
+      idUsuario, // document number as ID
       nombre,
       apellidos,
       apellido,
@@ -21,41 +22,39 @@ const registerUser = async (req, res, next) => {
       contrasena,
       contraseña,
       password,
-      idRol,
-      rol_id,
-      id_rol,
-      rol,
       tipoDocumento,
       documento,
-      telefono
+      telefono,
+      direccion
     } = req.body;
 
+    const targetIdUsuario = idUsuario || documento;
     const targetEmail = email || correo;
     const targetPassword = contraseña || contrasena || password;
     const targetApellidos = apellidos || apellido;
-    const targetDocumento = tipoDocumento || documento;
-    const targetRolId = idRol || rol_id || id_rol;
+    const targetDocumento = tipoDocumento || 'C.C.';
 
-    if (!nombre || !targetEmail || !targetPassword) {
+    if (!targetIdUsuario || !nombre || !targetEmail || !targetPassword) {
       res.status(400);
-      throw new Error('Por favor ingrese todos los campos requeridos (nombre, email, contrasena)');
+      throw new Error('Por favor ingrese todos los campos requeridos (documento, nombre, email, contraseña)');
     }
 
     const userExists = await User.findByEmail(targetEmail);
     if (userExists) {
       res.status(400);
-      throw new Error('El usuario ya existe');
+      throw new Error('El usuario ya existe con ese correo');
     }
 
     const user = await User.create({
+      idUsuario: parseInt(targetIdUsuario),
       nombre,
       apellidos: targetApellidos,
       tipoDocumento: targetDocumento,
       email: targetEmail,
       contrasena: targetPassword,
-      idRol: targetRolId,
-      rol,
+      idRol: 3, // Client role
       telefono,
+      direccion,
       estado: 'ACTIVO'
     });
 
@@ -74,6 +73,7 @@ const registerUser = async (req, res, next) => {
         rol_id: user.idRol, // Backward compatibility
         rol: user.rol,
         telefono: user.telefono,
+        direccion: user.direccion,
         estado: user.estado,
         token: generateToken(user.idUsuario),
       });
@@ -130,6 +130,7 @@ const loginUser = async (req, res, next) => {
         rol_id: user.idRol, // Backward compatibility
         rol: user.rol,
         telefono: user.telefono,
+        direccion: user.direccion,
         estado: user.estado,
         token: generateToken(user.idUsuario),
       });
@@ -162,6 +163,7 @@ const getUserProfile = async (req, res, next) => {
         rol_id: req.user.idRol, // Backward compatibility
         rol: req.user.rol,
         telefono: req.user.telefono,
+        direccion: req.user.direccion,
         estado: req.user.estado,
       });
     } else {
@@ -194,7 +196,8 @@ const updateUserProfile = async (req, res, next) => {
       rol,
       tipoDocumento,
       documento,
-      telefono
+      telefono,
+      direccion
     } = req.body;
 
     const targetEmail = email || correo;
@@ -226,7 +229,8 @@ const updateUserProfile = async (req, res, next) => {
       contrasena: targetPassword,
       idRol: targetRolId,
       rol,
-      telefono
+      telefono,
+      direccion
     });
 
     res.json({
@@ -243,6 +247,7 @@ const updateUserProfile = async (req, res, next) => {
       rol_id: updatedUser.idRol, // Backward compatibility
       rol: updatedUser.rol,
       telefono: updatedUser.telefono,
+      direccion: updatedUser.direccion,
       estado: updatedUser.estado,
     });
   } catch (error) {
@@ -270,10 +275,176 @@ const deactivateUser = async (req, res, next) => {
   }
 };
 
+// ── CRUD ADMINISTRATIVO DE USUARIOS ──
+
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.getAll();
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create user from admin panel
+// @route   POST /api/users
+// @access  Private/Admin
+const createUser = async (req, res, next) => {
+  try {
+    const {
+      idUsuario, // Custom ID as document number
+      nombre,
+      apellidos,
+      apellido,
+      email,
+      correo,
+      contrasena,
+      contraseña,
+      password,
+      idRol,
+      rol_id,
+      id_rol,
+      rol,
+      tipoDocumento,
+      documento,
+      telefono,
+      direccion,
+      estado
+    } = req.body;
+
+    const targetIdUsuario = idUsuario || documento;
+    const targetEmail = email || correo;
+    const targetPassword = contraseña || contrasena || password;
+    const targetApellidos = apellidos || apellido;
+    const targetDocumento = tipoDocumento || 'C.C.';
+    const targetRolId = idRol || rol_id || id_rol;
+
+    if (!targetIdUsuario || !nombre || !targetEmail || !targetPassword) {
+      res.status(400);
+      throw new Error('Por favor ingrese todos los campos requeridos (documento, nombre, email, contraseña)');
+    }
+
+    const userExists = await User.findByEmail(targetEmail);
+    if (userExists) {
+      res.status(400);
+      throw new Error('El usuario ya existe con ese correo');
+    }
+
+    const newUser = await User.create({
+      idUsuario: parseInt(targetIdUsuario),
+      nombre,
+      apellidos: targetApellidos,
+      tipoDocumento: targetDocumento,
+      email: targetEmail,
+      contrasena: targetPassword,
+      idRol: targetRolId,
+      rol,
+      telefono,
+      direccion,
+      estado: estado || 'ACTIVO'
+    });
+
+    res.status(201).json(newUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update user from admin panel
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      nombre,
+      apellidos,
+      apellido,
+      email,
+      correo,
+      contrasena,
+      contraseña,
+      password,
+      idRol,
+      rol_id,
+      id_rol,
+      rol,
+      tipoDocumento,
+      documento,
+      telefono,
+      direccion,
+      estado
+    } = req.body;
+
+    const targetEmail = email || correo;
+    const targetPassword = contraseña || contrasena || password;
+    const targetApellidos = apellidos || apellido;
+    const targetDocumento = tipoDocumento || documento;
+    const targetRolId = idRol || rol_id || id_rol;
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(404);
+      throw new Error('Usuario no encontrado');
+    }
+
+    if (targetEmail && targetEmail !== user.email) {
+      const userExists = await User.findByEmail(targetEmail);
+      if (userExists) {
+        res.status(400);
+        throw new Error('El correo ya está registrado por otro usuario');
+      }
+    }
+
+    const updatedUser = await User.update(id, {
+      nombre,
+      apellidos: targetApellidos,
+      tipoDocumento: targetDocumento,
+      email: targetEmail,
+      contrasena: targetPassword,
+      idRol: targetRolId,
+      rol,
+      telefono,
+      direccion,
+      estado
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete/Deactivate user from admin panel
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+const deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(404);
+      throw new Error('Usuario no encontrado');
+    }
+
+    await User.deactivate(id);
+    res.json({ message: 'Usuario desactivado correctamente' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
   deactivateUser,
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser
 };

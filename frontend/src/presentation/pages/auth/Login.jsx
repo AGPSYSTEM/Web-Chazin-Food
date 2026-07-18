@@ -1,26 +1,36 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/domain/state/AuthContext";
-import { Lock, Mail, Eye, EyeOff, ChefHat, Sparkles, User, UserPlus, LogIn, Phone } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff, ChefHat, Sparkles, User, UserPlus, LogIn, Phone, MapPin, CreditCard } from "lucide-react";
 import { useToast } from "@/domain/state/ToastContext";
 import logoImg from "@/presentation/assets/ChatGPT_Image_1_jun_2026__21_55_04.png";
+
 export function Login() {
   const [tab, setTab] = useState("login");
   const [loginCorreo, setLoginCorreo] = useState("");
-  const [loginContrase\u00F1a, setLoginContrase\u00F1a] = useState("");
+  const [loginContraseña, setLoginContraseña] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
+
+  // Registro: campos requeridos
   const [regNombre, setRegNombre] = useState("");
+  const [regApellidos, setRegApellidos] = useState("");
+  const [regTipoDocumento, setRegTipoDocumento] = useState("C.C.");
+  const [regDocumento, setRegDocumento] = useState("");
   const [regCorreo, setRegCorreo] = useState("");
   const [regTelefono, setRegTelefono] = useState("");
-  const [regContrase\u00F1a, setRegContrase\u00F1a] = useState("");
+  const [regDireccion, setRegDireccion] = useState("");
+  const [regContraseña, setRegContraseña] = useState("");
   const [regConfirmar, setRegConfirmar] = useState("");
+
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirm, setShowRegConfirm] = useState(false);
   const [isRegLoading, setIsRegLoading] = useState(false);
+
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+
   useEffect(() => {
     const wasDark = document.documentElement.classList.contains("dark");
     if (wasDark) document.documentElement.classList.remove("dark");
@@ -30,56 +40,66 @@ export function Login() {
       }
     };
   }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!loginCorreo || !loginContrase\u00F1a) {
-      toast.error("Campos requeridos", "Por favor ingresa tu correo y contrase\xF1a");
+    if (!loginCorreo || !loginContraseña) {
+      toast.error("Campos requeridos", "Por favor ingresa tu correo y contraseña");
       return;
     }
     setIsLoginLoading(true);
-    setTimeout(() => {
-      const success = login(loginCorreo, loginContrase\u00F1a);
-      if (success) {
-        toast.success("\xA1Bienvenido!", "Inicio de sesi\xF3n exitoso");
-        setTimeout(() => navigate("/"), 500);
-      } else {
-        toast.error("Error de autenticaci\xF3n", "Correo o contrase\xF1a incorrectos");
-      }
-      setIsLoginLoading(false);
-    }, 800);
+    const success = await login(loginCorreo, loginContraseña);
+    if (success) {
+      toast.success("¡Bienvenido!", "Inicio de sesión exitoso");
+      setTimeout(() => navigate("/"), 500);
+    } else {
+      toast.error("Error de autenticación", "Correo o contraseña incorrectos");
+    }
+    setIsLoginLoading(false);
   };
+
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!regNombre || !regCorreo || !regContrase\u00F1a || !regConfirmar) {
+    if (!regNombre.trim() || !regApellidos.trim() || !regDocumento.trim() || !regCorreo.trim() || !regContraseña.trim() || !regConfirmar.trim() || !regDireccion.trim()) {
       toast.error("Campos requeridos", "Por favor completa todos los campos obligatorios");
       return;
     }
-    if (regContrase\u00F1a.length < 6) {
-      toast.error("Contrase\xF1a d\xE9bil", "La contrase\xF1a debe tener al menos 6 caracteres");
+    if (regContraseña.length < 6) {
+      toast.error("Contraseña débil", "La contraseña debe tener al menos 6 caracteres");
       return;
     }
-    if (regContrase\u00F1a !== regConfirmar) {
-      toast.error("Contrase\xF1as no coinciden", "Verifica que ambas contrase\xF1as sean iguales");
+    if (regContraseña !== regConfirmar) {
+      toast.error("Contraseñas no coinciden", "Verifica que ambas contraseñas sean iguales");
       return;
     }
     setIsRegLoading(true);
-    setTimeout(() => {
-      const result = register(regNombre, regCorreo, regContrase\u00F1a);
-      if (result.success) {
-        toast.success("\xA1Cuenta creada!", result.message);
-        setTimeout(() => navigate("/"), 500);
-      } else {
-        toast.error("Error al registrar", result.message);
-      }
-      setIsRegLoading(false);
-    }, 800);
+    
+    const result = await register({
+      idUsuario: regDocumento,
+      nombre: regNombre,
+      apellidos: regApellidos,
+      tipoDocumento: regTipoDocumento,
+      telefono: regTelefono || null,
+      direccion: regDireccion,
+      email: regCorreo,
+      contrasena: regContraseña
+    });
+
+    if (result.success) {
+      toast.success("¡Cuenta creada!", result.message);
+      setTimeout(() => navigate("/"), 500);
+    } else {
+      toast.error("Error al registrar", result.message);
+    }
+    setIsRegLoading(false);
   };
-  const inputBase = "relative w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none";
-  const inputWithRight = "relative w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none";
+
+  const inputBase = "relative w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm";
+  const inputWithRight = "relative w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm";
+  const selectBase = "relative w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm appearance-none cursor-pointer";
+
   return <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center p-4">
-      {
-    /* Fondo decorativo */
-  }
+      {/* Fondo decorativo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-red-400/30 to-rose-500/20 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-[#30475E]/30 to-blue-500/20 rounded-full blur-3xl" />
@@ -94,113 +114,105 @@ export function Login() {
         </svg>
       </div>
 
-      <div className="relative w-full max-w-md z-10">
-        {
-    /* Logo */
-  }
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center relative mb-6">
+      <div className="relative w-full max-w-lg z-10 my-8">
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center relative mb-4">
             <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-rose-500 rounded-full blur-2xl opacity-30 animate-pulse" />
-            <div className="relative bg-white rounded-full p-6 shadow-2xl border-4 border-red-500/20">
-              <img src={logoImg} alt="Chazin Food" className="w-24 h-24 object-contain" />
+            <div className="relative bg-white rounded-full p-4 shadow-2xl border-4 border-red-500/20">
+              <img src={logoImg} alt="Chazin Food" className="w-16 h-16 object-contain" />
             </div>
-            <div className="absolute -top-2 -right-2 bg-gradient-to-br from-red-500 to-rose-600 p-2 rounded-full shadow-lg animate-bounce">
-              <ChefHat className="w-5 h-5 text-white" />
+            <div className="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-rose-600 p-1.5 rounded-full shadow-lg">
+              <ChefHat className="w-4 h-4 text-white" />
             </div>
           </div>
-          <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-1 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 bg-clip-text text-transparent">
             Chazin Food
           </h1>
-          <p className="text-gray-600 font-medium flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4 text-red-500" />
+          <p className="text-gray-600 font-medium flex items-center justify-center gap-2 text-sm">
+            <Sparkles className="w-3.5 h-3.5 text-red-500" />
             Sistema de Gestión
-            <Sparkles className="w-4 h-4 text-red-500" />
+            <Sparkles className="w-3.5 h-3.5 text-red-500" />
           </p>
         </div>
 
-        {
-    /* Card principal */
-  }
+        {/* Card principal */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 overflow-hidden">
           <div className="h-2 bg-gradient-to-r from-red-500 via-rose-500 to-red-500" />
 
-          {
-    /* Tabs */
-  }
+          {/* Tabs */}
           <div className="flex border-b border-gray-200/70">
             <button
-    onClick={() => setTab("login")}
-    className={`flex-1 flex items-center justify-center gap-2 py-4 font-semibold text-sm transition-all duration-300 ${tab === "login" ? "text-red-600 border-b-2 border-red-500 bg-red-50/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
-  >
+              onClick={() => setTab("login")}
+              className={`flex-1 flex items-center justify-center gap-2 py-4 font-semibold text-sm transition-all duration-300 ${tab === "login" ? "text-red-600 border-b-2 border-red-500 bg-red-50/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
+            >
               <LogIn className="w-4 h-4" />
               Iniciar Sesión
             </button>
             <button
-    onClick={() => setTab("register")}
-    className={`flex-1 flex items-center justify-center gap-2 py-4 font-semibold text-sm transition-all duration-300 ${tab === "register" ? "text-red-600 border-b-2 border-red-500 bg-red-50/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
-  >
+              onClick={() => setTab("register")}
+              className={`flex-1 flex items-center justify-center gap-2 py-4 font-semibold text-sm transition-all duration-300 ${tab === "register" ? "text-red-600 border-b-2 border-red-500 bg-red-50/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
+            >
               <UserPlus className="w-4 h-4" />
               Registrarse
             </button>
           </div>
 
-          <div className="p-8">
-            {
-    /* ── LOGIN ── */
-  }
-            {tab === "login" && <form onSubmit={handleLogin} className="space-y-5">
+          <div className="p-6">
+            {/* ── LOGIN ── */}
+            {tab === "login" && <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                     Correo Electrónico
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
                     <input
-    type="email"
-    value={loginCorreo}
-    onChange={(e) => setLoginCorreo(e.target.value)}
-    className={inputBase}
-    placeholder="usuario@chazinfood.com"
-  />
+                      type="email"
+                      value={loginCorreo}
+                      onChange={(e) => setLoginCorreo(e.target.value)}
+                      className={inputBase}
+                      placeholder="usuario@chazinfood.com"
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                     Contraseña
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
                     <input
-    type={showLoginPassword ? "text" : "password"}
-    value={loginContrase\u00F1a}
-    onChange={(e) => setLoginContrase\u00F1a(e.target.value)}
-    className={inputWithRight}
-    placeholder="••••••••"
-  />
+                      type={showLoginPassword ? "text" : "password"}
+                      value={loginContraseña}
+                      onChange={(e) => setLoginContraseña(e.target.value)}
+                      className={inputWithRight}
+                      placeholder="••••••••"
+                    />
                     <button
-    type="button"
-    onClick={() => setShowLoginPassword(!showLoginPassword)}
-    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
-  >
-                      {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 <button
-    type="submit"
-    disabled={isLoginLoading}
-    className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-4 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
-  >
+                  type="submit"
+                  disabled={isLoginLoading}
+                  className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group text-sm mt-2"
+                >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isLoginLoading ? <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Ingresando...
                       </> : <>
-                        <LogIn className="w-5 h-5" />
+                        <LogIn className="w-4 h-4" />
                         Iniciar Sesión
                       </>}
                   </span>
@@ -208,172 +220,215 @@ export function Login() {
                 </button>
 
                 <div className="text-center">
-                  <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-700 font-semibold hover:underline transition-colors">
+                  <Link to="/forgot-password" className="text-xs text-red-600 hover:text-red-700 font-semibold hover:underline transition-colors">
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
               </form>}
 
-            {
-    /* ── REGISTRO ── */
-  }
-            {tab === "register" && <form onSubmit={handleRegister} className="space-y-4">
-                <p className="text-xs text-gray-500 text-center -mt-1 mb-2">
+            {/* ── REGISTRO ── */}
+            {tab === "register" && <form onSubmit={handleRegister} className="space-y-3">
+                <p className="text-[10px] text-gray-500 text-center -mt-1 mb-2">
                   Los campos marcados con <span className="text-red-500">*</span> son obligatorios. La cuenta se crea con rol <span className="font-semibold text-[#30475E]">Cliente</span>.
                 </p>
 
-                {
-    /* Nombre */
-  }
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nombre Completo <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
-                    <input
-    type="text"
-    value={regNombre}
-    onChange={(e) => setRegNombre(e.target.value)}
-    className={inputBase}
-    placeholder="Tu nombre completo"
-  />
+                {/* Grid: Nombre y Apellidos */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Nombres <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <input
+                        type="text"
+                        value={regNombre}
+                        onChange={(e) => setRegNombre(e.target.value)}
+                        className={inputBase}
+                        placeholder="Juan"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Apellidos <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <input
+                        type="text"
+                        value={regApellidos}
+                        onChange={(e) => setRegApellidos(e.target.value)}
+                        className={inputBase}
+                        placeholder="Pérez"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {
-    /* Correo */
-  }
+                {/* Grid: Tipo de documento y Documento */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Tipo <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <select
+                        value={regTipoDocumento}
+                        onChange={(e) => setRegTipoDocumento(e.target.value)}
+                        className={selectBase}
+                      >
+                        <option value="C.C.">C.C.</option>
+                        <option value="T.I.">T.I.</option>
+                        <option value="C.E.">C.E.</option>
+                        <option value="P.P.">Pasaporte</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Número de Documento (ID) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <input
+                        type="number"
+                        value={regDocumento}
+                        onChange={(e) => setRegDocumento(e.target.value)}
+                        className={inputBase}
+                        placeholder="Ej: 1094000123"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grid: Teléfono y Dirección */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Teléfono
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <input
+                        type="tel"
+                        value={regTelefono}
+                        onChange={(e) => setRegTelefono(e.target.value)}
+                        className={inputBase}
+                        placeholder="3190000000"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Dirección <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <input
+                        type="text"
+                        value={regDireccion}
+                        onChange={(e) => setRegDireccion(e.target.value)}
+                        className={inputBase}
+                        placeholder="Calle 12 # 34-56"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Correo */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Correo Electrónico <span className="text-red-500">*</span>
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
                     <input
-    type="email"
-    value={regCorreo}
-    onChange={(e) => setRegCorreo(e.target.value)}
-    className={inputBase}
-    placeholder="tu@correo.com"
-  />
+                      type="email"
+                      value={regCorreo}
+                      onChange={(e) => setRegCorreo(e.target.value)}
+                      className={inputBase}
+                      placeholder="tu@correo.com"
+                    />
                   </div>
                 </div>
 
-                {
-    /* Teléfono (opcional) */
-  }
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Teléfono <span className="text-gray-400 font-normal text-xs">(opcional)</span>
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
-                    <input
-    type="tel"
-    value={regTelefono}
-    onChange={(e) => setRegTelefono(e.target.value)}
-    className={inputBase}
-    placeholder="+58 412 000 0000"
-  />
+                {/* Grid: Contraseña y Confirmar */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Contraseña <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <input
+                        type={showRegPassword ? "text" : "password"}
+                        value={regContraseña}
+                        onChange={(e) => setRegContraseña(e.target.value)}
+                        className={inputWithRight}
+                        placeholder="Mínimo 6"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegPassword(!showRegPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
+                      >
+                        {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                {
-    /* Contraseña */
-  }
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Contraseña <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
-                    <input
-    type={showRegPassword ? "text" : "password"}
-    value={regContrase\u00F1a}
-    onChange={(e) => setRegContrase\u00F1a(e.target.value)}
-    className={inputWithRight}
-    placeholder="Mínimo 6 caracteres"
-  />
-                    <button
-    type="button"
-    onClick={() => setShowRegPassword(!showRegPassword)}
-    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
-  >
-                      {showRegPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Confirmar <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                      <input
+                        type={showRegConfirm ? "text" : "password"}
+                        value={regConfirmar}
+                        onChange={(e) => setRegConfirmar(e.target.value)}
+                        className={`${inputWithRight} ${regConfirmar.length > 0 ? regContraseña === regConfirmar ? "border-green-400 focus:border-green-500 focus:ring-green-500/50" : "border-red-300 focus:border-red-500" : ""}`}
+                        placeholder="Repite"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegConfirm(!showRegConfirm)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
+                      >
+                        {showRegConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-
-                  {
-    /* Indicador de fortaleza */
-  }
-                  {regContrase\u00F1a.length > 0 && <div className="mt-2 flex gap-1">
-                      {[...Array(4)].map((_, i) => {
-    const strength = regContrase\u00F1a.length >= 10 ? 4 : regContrase\u00F1a.length >= 8 ? 3 : regContrase\u00F1a.length >= 6 ? 2 : 1;
-    return <div
-      key={i}
-      className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < strength ? strength === 1 ? "bg-red-400" : strength === 2 ? "bg-yellow-400" : strength === 3 ? "bg-blue-400" : "bg-green-400" : "bg-gray-200"}`}
-    />;
-  })}
-                      <span className="text-xs text-gray-500 ml-1">
-                        {regContrase\u00F1a.length < 6 ? "D\xE9bil" : regContrase\u00F1a.length < 8 ? "Regular" : regContrase\u00F1a.length < 10 ? "Buena" : "Fuerte"}
-                      </span>
-                    </div>}
-                </div>
-
-                {
-    /* Confirmar contraseña */
-  }
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Confirmar Contraseña <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
-                    <input
-    type={showRegConfirm ? "text" : "password"}
-    value={regConfirmar}
-    onChange={(e) => setRegConfirmar(e.target.value)}
-    className={`${inputWithRight} ${regConfirmar.length > 0 ? regContrase\u00F1a === regConfirmar ? "border-green-400 focus:border-green-500 focus:ring-green-500/50" : "border-red-300 focus:border-red-500" : ""}`}
-    placeholder="Repite tu contraseña"
-  />
-                    <button
-    type="button"
-    onClick={() => setShowRegConfirm(!showRegConfirm)}
-    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
-  >
-                      {showRegConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {regConfirmar.length > 0 && regContrase\u00F1a !== regConfirmar && <p className="text-xs text-red-500 mt-1 ml-1">Las contraseñas no coinciden</p>}
                 </div>
 
                 <button
-    type="submit"
-    disabled={isRegLoading}
-    className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-4 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
-  >
+                  type="submit"
+                  disabled={isRegLoading}
+                  className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group text-sm mt-3"
+                >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isRegLoading ? <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Creando cuenta...
                       </> : <>
-                        <UserPlus className="w-5 h-5" />
+                        <UserPlus className="w-4 h-4" />
                         Crear Cuenta
                       </>}
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                 </button>
-
               </form>}
           </div>
         </div>
-
       </div>
 
       <style>{`
