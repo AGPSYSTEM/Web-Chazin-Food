@@ -1,8 +1,13 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+<<<<<<< HEAD
 const generateToken = (idUsuario) => {
   return jwt.sign({ id: idUsuario }, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood', {
+=======
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood', {
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     expiresIn: '30d',
   });
 };
@@ -12,6 +17,7 @@ const generateToken = (idUsuario) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
+<<<<<<< HEAD
     const {
       nombre,
       apellidos,
@@ -39,6 +45,16 @@ const registerUser = async (req, res, next) => {
     if (!nombre || !targetEmail || !targetPassword) {
       res.status(400);
       throw new Error('Por favor ingrese todos los campos requeridos (nombre, email, contrasena)');
+=======
+    const { nombre, correo, email, contrase\u00f1a, contrasena, password, rol } = req.body;
+    
+    const targetEmail = correo || email;
+    const targetPassword = contrase\u00f1a || contrasena || password;
+
+    if (!nombre || !targetEmail || !targetPassword) {
+      res.status(400);
+      throw new Error('Por favor ingrese todos los campos requeridos (nombre, correo, contrase\u00f1a)');
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     }
 
     const userExists = await User.findByEmail(targetEmail);
@@ -49,6 +65,7 @@ const registerUser = async (req, res, next) => {
 
     const user = await User.create({
       nombre,
+<<<<<<< HEAD
       apellidos: targetApellidos,
       tipoDocumento: targetDocumento,
       email: targetEmail,
@@ -57,10 +74,16 @@ const registerUser = async (req, res, next) => {
       rol,
       telefono,
       estado: 'ACTIVO'
+=======
+      correo: targetEmail,
+      contrasena: targetPassword,
+      rol: rol || 'Cliente'
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     });
 
     if (user) {
       res.status(201).json({
+<<<<<<< HEAD
         idUsuario: user.idUsuario,
         nombre: user.nombre,
         apellidos: user.apellidos,
@@ -70,6 +93,13 @@ const registerUser = async (req, res, next) => {
         rol: user.rol,
         telefono: user.telefono,
         estado: user.estado,
+=======
+        _id: user.idUsuario,
+        idUsuario: user.idUsuario,
+        nombre: user.nombre,
+        correo: user.correo,
+        rol: user.rol,
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
         token: generateToken(user.idUsuario),
       });
     } else {
@@ -86,6 +116,7 @@ const registerUser = async (req, res, next) => {
 // @access  Public
 const loginUser = async (req, res, next) => {
   try {
+<<<<<<< HEAD
     const { email, correo, contrasena, contraseña, password } = req.body;
 
     const targetEmail = email || correo;
@@ -94,16 +125,33 @@ const loginUser = async (req, res, next) => {
     if (!targetEmail || !targetPassword) {
       res.status(400);
       throw new Error('Por favor ingrese email y contraseña');
+=======
+    const { correo, email, contrase\u00f1a, contrasena, password } = req.body;
+
+    const targetEmail = correo || email;
+    const targetPassword = contrase\u00f1a || contrasena || password;
+
+    if (!targetEmail || !targetPassword) {
+      res.status(400);
+      throw new Error('Por favor ingrese correo y contrase\u00f1a');
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     }
 
     const user = await User.findByEmail(targetEmail);
 
     if (!user) {
       res.status(401);
+<<<<<<< HEAD
       throw new Error('Correo o contraseña incorrectos');
     }
 
     if (user.estado === 'INACTIVO') {
+=======
+      throw new Error('Correo o contrase\u00f1a incorrectos');
+    }
+
+    if (user.estado === 0) {
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
       res.status(401);
       throw new Error('Esta cuenta ha sido desactivada');
     }
@@ -111,6 +159,7 @@ const loginUser = async (req, res, next) => {
     const isMatch = await user.matchPassword(targetPassword);
     if (isMatch) {
       res.json({
+<<<<<<< HEAD
         idUsuario: user.idUsuario,
         nombre: user.nombre,
         apellidos: user.apellidos,
@@ -120,11 +169,22 @@ const loginUser = async (req, res, next) => {
         rol: user.rol,
         telefono: user.telefono,
         estado: user.estado,
+=======
+        _id: user.idUsuario,
+        idUsuario: user.idUsuario,
+        nombre: user.nombre,
+        correo: user.correo,
+        rol: user.rol,
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
         token: generateToken(user.idUsuario),
       });
     } else {
       res.status(401);
+<<<<<<< HEAD
       throw new Error('Correo o contraseña incorrectos');
+=======
+      throw new Error('Correo o contrase\u00f1a incorrectos');
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     }
   } catch (error) {
     next(error);
@@ -136,6 +196,7 @@ const loginUser = async (req, res, next) => {
 // @access  Private
 const getUserProfile = async (req, res, next) => {
   try {
+<<<<<<< HEAD
     if (req.user) {
       res.json({
         idUsuario: req.user.idUsuario,
@@ -148,6 +209,11 @@ const getUserProfile = async (req, res, next) => {
         telefono: req.user.telefono,
         estado: req.user.estado,
       });
+=======
+    // req.user is populated by protect middleware
+    if (req.user) {
+      res.json(req.user);
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     } else {
       res.status(404);
       throw new Error('Usuario no encontrado');
@@ -162,6 +228,7 @@ const getUserProfile = async (req, res, next) => {
 // @access  Private
 const updateUserProfile = async (req, res, next) => {
   try {
+<<<<<<< HEAD
     const userId = req.user.idUsuario;
     const {
       nombre,
@@ -186,6 +253,13 @@ const updateUserProfile = async (req, res, next) => {
     const targetApellidos = apellidos || apellido;
     const targetDocumento = tipoDocumento || documento;
     const targetRolId = idRol || rol_id || id_rol;
+=======
+    const userId = req.user.idUsuario || req.user._id;
+    const { nombre, correo, email, contrase\u00f1a, contrasena, password } = req.body;
+
+    const targetEmail = correo || email;
+    const targetPassword = contrase\u00f1a || contrasena || password;
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
 
     const user = await User.findById(userId);
     if (!user) {
@@ -193,7 +267,12 @@ const updateUserProfile = async (req, res, next) => {
       throw new Error('Usuario no encontrado');
     }
 
+<<<<<<< HEAD
     if (targetEmail && targetEmail !== user.email) {
+=======
+    // If changing email, make sure it's not taken
+    if (targetEmail && targetEmail !== user.correo) {
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
       const userExists = await User.findByEmail(targetEmail);
       if (userExists) {
         res.status(400);
@@ -203,6 +282,7 @@ const updateUserProfile = async (req, res, next) => {
 
     const updatedUser = await User.update(userId, {
       nombre,
+<<<<<<< HEAD
       apellidos: targetApellidos,
       tipoDocumento: targetDocumento,
       email: targetEmail,
@@ -222,6 +302,18 @@ const updateUserProfile = async (req, res, next) => {
       rol: updatedUser.rol,
       telefono: updatedUser.telefono,
       estado: updatedUser.estado,
+=======
+      correo: targetEmail,
+      contrasena: targetPassword
+    });
+
+    res.json({
+      _id: updatedUser.idUsuario,
+      idUsuario: updatedUser.idUsuario,
+      nombre: updatedUser.nombre,
+      correo: updatedUser.correo,
+      rol: updatedUser.rol,
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     });
   } catch (error) {
     next(error);
@@ -233,7 +325,11 @@ const updateUserProfile = async (req, res, next) => {
 // @access  Private
 const deactivateUser = async (req, res, next) => {
   try {
+<<<<<<< HEAD
     const userId = req.user.idUsuario;
+=======
+    const userId = req.user.idUsuario || req.user._id;
+>>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     const user = await User.findById(userId);
 
     if (!user) {
