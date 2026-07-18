@@ -2,7 +2,6 @@ const bcrypt = require('bcryptjs');
 const connectDB = require('../config/db');
 const { pool } = connectDB;
 
-<<<<<<< HEAD
 class User {
   constructor(data) {
     this.idUsuario = data.idUsuario;
@@ -150,9 +149,8 @@ class User {
     const pass = contrasena || contraseña || password;
     const targetApellidos = apellidos || apellido || '';
     const targetDocumento = tipoDocumento || documento || '';
-=======
 // Initialize database tables if they do not exist
-const initDB = async () => {
+const initUserDB = async () => {
   try {
     // 1. Create table rol
     await pool.query(`
@@ -164,17 +162,19 @@ const initDB = async () => {
       )
     `);
 
-    // 2. Create table usuario
+    // 2. Create table usuarios
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS usuario (
-        idUsuario INT AUTO_INCREMENT PRIMARY KEY,
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id INT AUTO_INCREMENT PRIMARY KEY,
         nombre VARCHAR(100) NOT NULL,
-        correo VARCHAR(100) UNIQUE NOT NULL,
+        apellido VARCHAR(100),
+        email VARCHAR(100) UNIQUE NOT NULL,
         contrasena VARCHAR(255) NOT NULL,
-        idRol INT NOT NULL,
+        rol_id INT NOT NULL,
+        telefono VARCHAR(50),
+        imagen VARCHAR(255),
         estado TINYINT DEFAULT 1,
-        fechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (idRol) REFERENCES rol(idRol)
+        FOREIGN KEY (rol_id) REFERENCES rol(idRol)
       )
     `);
 
@@ -195,37 +195,43 @@ const initDB = async () => {
 };
 
 // Run initialization immediately on file import (async, non-blocking)
-initDB();
+initUserDB();
 
 class User {
   constructor(data) {
-    this._id = data.idUsuario || data._id;
-    this.idUsuario = data.idUsuario || data._id;
+    this._id = data.id || data.idUsuario || data._id;
+    this.id = data.id || data.idUsuario || data._id;
+    this.idUsuario = data.id || data.idUsuario || data._id; // Backward compatibility
     this.nombre = data.nombre;
-    this.correo = data.correo;
-    this.contrase\u00f1a = data.contrasena || data.contraseña;
-    this.contrasena = data.contrasena || data.contraseña;
+    this.apellido = data.apellido;
+    this.email = data.email || data.correo;
+    this.correo = data.email || data.correo; // Backward compatibility
+    this.contraseña = data.contrasena;
+    this.contrasena = data.contrasena;
+    this.rol_id = data.rol_id || data.idRol;
+    this.idRol = data.rol_id || data.idRol; // Backward compatibility
     this.rol = data.rol;
+    this.telefono = data.telefono;
+    this.imagen = data.imagen;
     this.estado = data.estado;
-    this.fechaCreacion = data.fechaCreacion;
   }
 
   // Compare passwords
   async matchPassword(enteredPassword) {
-    const passwordToCompare = this.contrasena || this.contraseña;
+    const passwordToCompare = this.contrasena;
     if (!passwordToCompare) return false;
     return await bcrypt.compare(enteredPassword, passwordToCompare);
   }
 
   // Find user by email
-  static async findByEmail(correo) {
+  static async findByEmail(email) {
     const query = `
-      SELECT u.idUsuario, u.nombre, u.correo, u.contrasena, u.estado, u.fechaCreacion, r.nombre AS rol
-      FROM usuario u
-      LEFT JOIN rol r ON u.idRol = r.idRol
-      WHERE u.correo = ?
+      SELECT u.id, u.nombre, u.apellido, u.email, u.contrasena, u.rol_id, u.telefono, u.imagen, u.estado, r.nombre AS rol
+      FROM usuarios u
+      LEFT JOIN rol r ON u.rol_id = r.idRol
+      WHERE u.email = ?
     `;
-    const [rows] = await pool.query(query, [correo]);
+    const [rows] = await pool.query(query, [email]);
     if (rows.length === 0) return null;
     return new User(rows[0]);
   }
@@ -233,20 +239,47 @@ class User {
   // Find user by ID
   static async findById(id) {
     const query = `
-      SELECT u.idUsuario, u.nombre, u.correo, u.contrasena, u.estado, u.fechaCreacion, r.nombre AS rol
-      FROM usuario u
-      LEFT JOIN rol r ON u.idRol = r.idRol
-      WHERE u.idUsuario = ?
+      SELECT u.id, u.nombre, u.apellido, u.email, u.contrasena, u.rol_id, u.telefono, u.imagen, u.estado, r.nombre AS rol
+      FROM usuarios u
+      LEFT JOIN rol r ON u.rol_id = r.idRol
+      WHERE u.id = ?
     `;
     const [rows] = await pool.query(query, [id]);
     if (rows.length === 0) return null;
     return new User(rows[0]);
   }
 
+  // Compatibility findOne for authController
+  static async findOne(conditions) {
+    if (conditions.correo || conditions.email) {
+      return await this.findByEmail(conditions.correo || conditions.email);
+    }
+    if (conditions.id || conditions._id || conditions.idUsuario) {
+      return await this.findById(conditions.id || conditions._id || conditions.idUsuario);
+    }
+    return null;
+  }
+
   // Create new user
   static async create({ nombre, correo, contrasena, contraseña, rol }) {
     const pass = contrasena || contraseña;
->>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
+  static async create({
+    nombre,
+    apellido,
+    email,
+    correo,
+    contrasena,
+    contraseña,
+    password,
+    rol_id,
+    idRol,
+    rol,
+    telefono,
+    imagen,
+    estado = 1
+  }) {
+    const targetEmail = email || correo;
+    const pass = contrasena || contraseña || password;
     if (!pass) {
       throw new Error('La contraseña es requerida');
     }
@@ -255,9 +288,10 @@ class User {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(pass, salt);
 
-<<<<<<< HEAD
     // Resolve idRol
     let targetRolId = idRol || rol_id || id_rol;
+    // Resolve rol_id
+    let targetRolId = rol_id || idRol;
     if (!targetRolId) {
       const targetRolName = rol || 'Cliente';
       const [rolRows] = await pool.query('SELECT idRol FROM rol WHERE LOWER(nombre) = LOWER(?) LIMIT 1', [targetRolName]);
@@ -266,7 +300,6 @@ class User {
       } else {
         const [anyRol] = await pool.query('SELECT idRol FROM rol WHERE LOWER(nombre) = "cliente" LIMIT 1');
         targetRolId = anyRol.length > 0 ? anyRol[0].idRol : 3;
-=======
     // Resolve rol ID (default to Cliente if not found)
     const targetRol = rol || 'Cliente';
     const [rolRows] = await pool.query('SELECT idRol FROM rol WHERE LOWER(nombre) = LOWER(?) LIMIT 1', [targetRol]);
@@ -279,12 +312,10 @@ class User {
       const [anyRol] = await pool.query('SELECT idRol FROM rol WHERE LOWER(nombre) = "cliente" LIMIT 1');
       if (anyRol.length > 0) {
         idRol = anyRol[0].idRol;
->>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
       }
     }
 
     const insertQuery = `
-<<<<<<< HEAD
       INSERT INTO usuario (nombre, apellidos, tipoDocumento, telefono, email, contrasena, estado, idRol)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
@@ -300,22 +331,30 @@ class User {
       finalEstado,
       targetRolId
     ]);
-=======
       INSERT INTO usuario (nombre, correo, contrasena, idRol, estado)
       VALUES (?, ?, ?, ?, 1)
     `;
     const [result] = await pool.query(insertQuery, [nombre, correo, hashedPassword, idRol]);
->>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
+      INSERT INTO usuarios (nombre, apellido, email, contrasena, rol_id, telefono, imagen, estado)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    const [result] = await pool.query(insertQuery, [
+      nombre,
+      apellido || null,
+      targetEmail,
+      hashedPassword,
+      targetRolId,
+      telefono || null,
+      imagen || null,
+      estado !== undefined ? estado : 1
+    ]);
     
     return await User.findById(result.insertId);
   }
 
   // Update user fields dynamically
-<<<<<<< HEAD
   static async update(idUsuario, data) {
-=======
   static async update(id, data) {
->>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     const fields = [];
     const values = [];
 
@@ -323,7 +362,6 @@ class User {
       fields.push('nombre = ?');
       values.push(data.nombre);
     }
-<<<<<<< HEAD
     if (data.apellidos !== undefined || data.apellido !== undefined) {
       fields.push('apellidos = ?');
       values.push(data.apellidos || data.apellido);
@@ -335,6 +373,9 @@ class User {
     if (data.telefono !== undefined) {
       fields.push('telefono = ?');
       values.push(data.telefono);
+    if (data.apellido !== undefined) {
+      fields.push('apellido = ?');
+      values.push(data.apellido);
     }
     if (data.email !== undefined || data.correo !== undefined) {
       fields.push('email = ?');
@@ -342,36 +383,45 @@ class User {
     }
     if (data.contrasena !== undefined || data.contraseña !== undefined || data.password !== undefined) {
       const pass = data.contrasena || data.contraseña || data.password;
-=======
     if (data.correo !== undefined) {
       fields.push('correo = ?');
       values.push(data.correo);
     }
     if (data.contrasena !== undefined || data.contraseña !== undefined) {
       const pass = data.contrasena || data.contraseña;
->>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
+    }
+    if (data.contrasena !== undefined || data.contraseña !== undefined || data.password !== undefined) {
+      const pass = data.contrasena || data.contraseña || data.password;
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(pass, salt);
       fields.push('contrasena = ?');
       values.push(hashedPassword);
     }
-<<<<<<< HEAD
     if (data.idRol !== undefined || data.rol_id !== undefined || data.id_rol !== undefined) {
       fields.push('idRol = ?');
       values.push(data.idRol || data.rol_id || data.id_rol);
     } else if (data.rol !== undefined) {
-=======
     if (data.rol !== undefined) {
       // Resolve rol ID
->>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
+    if (data.rol_id !== undefined || data.idRol !== undefined) {
+      fields.push('rol_id = ?');
+      values.push(data.rol_id || data.idRol);
+    } else if (data.rol !== undefined) {
       const [rolRows] = await pool.query('SELECT idRol FROM rol WHERE LOWER(nombre) = LOWER(?) LIMIT 1', [data.rol]);
       if (rolRows.length > 0) {
-        fields.push('idRol = ?');
+        fields.push('rol_id = ?');
         values.push(rolRows[0].idRol);
       }
     }
+    if (data.telefono !== undefined) {
+      fields.push('telefono = ?');
+      values.push(data.telefono);
+    }
+    if (data.imagen !== undefined) {
+      fields.push('imagen = ?');
+      values.push(data.imagen);
+    }
     if (data.estado !== undefined) {
-<<<<<<< HEAD
       const finalEstado = (data.estado === 'INACTIVO' || data.estado === 0 || data.estado === false) ? 'INACTIVO' : 'ACTIVO';
       fields.push('estado = ?');
       values.push(finalEstado);
@@ -392,7 +442,6 @@ class User {
   static async deactivate(idUsuario) {
     const query = `UPDATE usuario SET estado = 'INACTIVO' WHERE idUsuario = ?`;
     await pool.query(query, [idUsuario]);
-=======
       fields.push('estado = ?');
       values.push(data.estado);
     }
@@ -402,7 +451,7 @@ class User {
     }
 
     values.push(id);
-    const updateQuery = `UPDATE usuario SET ${fields.join(', ')} WHERE idUsuario = ?`;
+    const updateQuery = `UPDATE usuarios SET ${fields.join(', ')} WHERE id = ?`;
     await pool.query(updateQuery, values);
 
     return await User.findById(id);
@@ -410,9 +459,8 @@ class User {
 
   // Deactivate user
   static async deactivate(id) {
-    const query = 'UPDATE usuario SET estado = 0 WHERE idUsuario = ?';
+    const query = 'UPDATE usuarios SET estado = 0 WHERE id = ?';
     await pool.query(query, [id]);
->>>>>>> 8390e28ec3d864bb0178f6d84530f1821941dd58
     return true;
   }
 }
