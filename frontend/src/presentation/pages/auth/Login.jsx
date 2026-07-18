@@ -94,9 +94,9 @@ export function Login() {
     setIsRegLoading(false);
   };
 
-  const inputBase = "relative w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm";
-  const inputWithRight = "relative w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm";
-  const selectBase = "relative w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm appearance-none cursor-pointer";
+  const inputBase = "relative w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm";
+  const inputWithRight = "relative w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm";
+  const selectBase = "relative w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all bg-white/50 backdrop-blur-sm outline-none text-sm appearance-none cursor-pointer";
 
   return <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center p-4">
       {/* Fondo decorativo */}
@@ -114,13 +114,13 @@ export function Login() {
         </svg>
       </div>
 
-      <div className="relative w-full max-w-lg z-10 my-8">
+      <div className="relative w-full max-w-md z-10 my-6">
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center relative mb-4">
             <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-rose-500 rounded-full blur-2xl opacity-30 animate-pulse" />
-            <div className="relative bg-white rounded-full p-4 shadow-2xl border-4 border-red-500/20">
-              <img src={logoImg} alt="Chazin Food" className="w-16 h-16 object-contain" />
+            <div className="relative bg-white rounded-full p-5 shadow-2xl border-4 border-red-500/20">
+              <img src={logoImg} alt="Chazin Food" className="w-20 h-20 object-contain" />
             </div>
             <div className="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-rose-600 p-1.5 rounded-full shadow-lg">
               <ChefHat className="w-4 h-4 text-white" />
@@ -129,10 +129,10 @@ export function Login() {
           <h1 className="text-4xl font-bold mb-1 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 bg-clip-text text-transparent">
             Chazin Food
           </h1>
-          <p className="text-gray-600 font-medium flex items-center justify-center gap-2 text-sm">
-            <Sparkles className="w-3.5 h-3.5 text-red-500" />
+          <p className="text-gray-600 font-medium flex items-center justify-center gap-2 text-sm font-semibold">
+            <Sparkles className="w-4 h-4 text-red-500" />
             Sistema de Gestión
-            <Sparkles className="w-3.5 h-3.5 text-red-500" />
+            <Sparkles className="w-4 h-4 text-red-500" />
           </p>
         </div>
 
@@ -158,16 +158,16 @@ export function Login() {
             </button>
           </div>
 
-          <div className="p-6">
+          <div className="p-8">
             {/* ── LOGIN ── */}
-            {tab === "login" && <form onSubmit={handleLogin} className="space-y-4">
+            {tab === "login" && <form onSubmit={handleLogin} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Correo Electrónico
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
                     <input
                       type="email"
                       value={loginCorreo}
@@ -179,12 +179,12 @@ export function Login() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Contraseña
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
                     <input
                       type={showLoginPassword ? "text" : "password"}
                       value={loginContraseña}
@@ -197,7 +197,7 @@ export function Login() {
                       onClick={() => setShowLoginPassword(!showLoginPassword)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
                     >
-                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
@@ -205,14 +205,14 @@ export function Login() {
                 <button
                   type="submit"
                   disabled={isLoginLoading}
-                  className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group text-sm mt-2"
+                  className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-4 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group text-sm"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isLoginLoading ? <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Ingresando...
                       </> : <>
-                        <LogIn className="w-4 h-4" />
+                        <LogIn className="w-5 h-5" />
                         Iniciar Sesión
                       </>}
                   </span>
@@ -220,136 +220,136 @@ export function Login() {
                 </button>
 
                 <div className="text-center">
-                  <Link to="/forgot-password" className="text-xs text-red-600 hover:text-red-700 font-semibold hover:underline transition-colors">
+                  <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-700 font-semibold hover:underline transition-colors">
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
               </form>}
 
             {/* ── REGISTRO ── */}
-            {tab === "register" && <form onSubmit={handleRegister} className="space-y-3">
-                <p className="text-[10px] text-gray-500 text-center -mt-1 mb-2">
+            {tab === "register" && <form onSubmit={handleRegister} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                <p className="text-xs text-gray-500 text-center -mt-1 mb-2">
                   Los campos marcados con <span className="text-red-500">*</span> son obligatorios. La cuenta se crea con rol <span className="font-semibold text-[#30475E]">Cliente</span>.
                 </p>
 
-                {/* Grid: Nombre y Apellidos */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Nombres <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <input
-                        type="text"
-                        value={regNombre}
-                        onChange={(e) => setRegNombre(e.target.value)}
-                        className={inputBase}
-                        placeholder="Juan"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Apellidos <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <input
-                        type="text"
-                        value={regApellidos}
-                        onChange={(e) => setRegApellidos(e.target.value)}
-                        className={inputBase}
-                        placeholder="Pérez"
-                      />
-                    </div>
+                {/* Nombres */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Nombres <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <input
+                      type="text"
+                      value={regNombre}
+                      onChange={(e) => setRegNombre(e.target.value)}
+                      className={inputBase}
+                      placeholder="Juan"
+                    />
                   </div>
                 </div>
 
-                {/* Grid: Tipo de documento y Documento */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Tipo <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative group">
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <select
-                        value={regTipoDocumento}
-                        onChange={(e) => setRegTipoDocumento(e.target.value)}
-                        className={selectBase}
-                      >
-                        <option value="C.C.">C.C.</option>
-                        <option value="T.I.">T.I.</option>
-                        <option value="C.E.">C.E.</option>
-                        <option value="P.P.">Pasaporte</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Número de Documento (ID) <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <input
-                        type="number"
-                        value={regDocumento}
-                        onChange={(e) => setRegDocumento(e.target.value)}
-                        className={inputBase}
-                        placeholder="Ej: 1094000123"
-                      />
-                    </div>
+                {/* Apellidos */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Apellidos <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <input
+                      type="text"
+                      value={regApellidos}
+                      onChange={(e) => setRegApellidos(e.target.value)}
+                      className={inputBase}
+                      placeholder="Pérez"
+                    />
                   </div>
                 </div>
 
-                {/* Grid: Teléfono y Dirección */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Teléfono
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <input
-                        type="tel"
-                        value={regTelefono}
-                        onChange={(e) => setRegTelefono(e.target.value)}
-                        className={inputBase}
-                        placeholder="3190000000"
-                      />
-                    </div>
+                {/* Tipo de Documento */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Tipo de Documento <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <select
+                      value={regTipoDocumento}
+                      onChange={(e) => setRegTipoDocumento(e.target.value)}
+                      className={selectBase}
+                    >
+                      <option value="C.C.">C.C. (Cédula de Ciudadanía)</option>
+                      <option value="T.I.">T.I. (Tarjeta de Identidad)</option>
+                      <option value="C.E.">C.E. (Cédula de Extranjería)</option>
+                      <option value="P.P.">Pasaporte</option>
+                    </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Dirección <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <input
-                        type="text"
-                        value={regDireccion}
-                        onChange={(e) => setRegDireccion(e.target.value)}
-                        className={inputBase}
-                        placeholder="Calle 12 # 34-56"
-                      />
-                    </div>
+                </div>
+
+                {/* Número de documento (ID) */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Número de Documento (ID) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <input
+                      type="number"
+                      value={regDocumento}
+                      onChange={(e) => setRegDocumento(e.target.value)}
+                      className={inputBase}
+                      placeholder="Ej: 1094000123"
+                    />
+                  </div>
+                </div>
+
+                {/* Teléfono */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Teléfono
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <input
+                      type="tel"
+                      value={regTelefono}
+                      onChange={(e) => setRegTelefono(e.target.value)}
+                      className={inputBase}
+                      placeholder="3190000000"
+                    />
+                  </div>
+                </div>
+
+                {/* Dirección */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Dirección de Entrega <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <input
+                      type="text"
+                      value={regDireccion}
+                      onChange={(e) => setRegDireccion(e.target.value)}
+                      className={inputBase}
+                      placeholder="Calle 12 # 34-56"
+                    />
                   </div>
                 </div>
 
                 {/* Correo */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Correo Electrónico <span className="text-red-500">*</span>
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
                     <input
                       type="email"
                       value={regCorreo}
@@ -360,67 +360,67 @@ export function Login() {
                   </div>
                 </div>
 
-                {/* Grid: Contraseña y Confirmar */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Contraseña <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <input
-                        type={showRegPassword ? "text" : "password"}
-                        value={regContraseña}
-                        onChange={(e) => setRegContraseña(e.target.value)}
-                        className={inputWithRight}
-                        placeholder="Mínimo 6"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowRegPassword(!showRegPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
-                      >
-                        {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
+                {/* Contraseña */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Contraseña <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <input
+                      type={showRegPassword ? "text" : "password"}
+                      value={regContraseña}
+                      onChange={(e) => setRegContraseña(e.target.value)}
+                      className={inputWithRight}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
+                    >
+                      {showRegPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Confirmar <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-4 h-4 transition-colors z-10" />
-                      <input
-                        type={showRegConfirm ? "text" : "password"}
-                        value={regConfirmar}
-                        onChange={(e) => setRegConfirmar(e.target.value)}
-                        className={`${inputWithRight} ${regConfirmar.length > 0 ? regContraseña === regConfirmar ? "border-green-400 focus:border-green-500 focus:ring-green-500/50" : "border-red-300 focus:border-red-500" : ""}`}
-                        placeholder="Repite"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowRegConfirm(!showRegConfirm)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
-                      >
-                        {showRegConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
+                </div>
+
+                {/* Confirmar contraseña */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Confirmar Contraseña <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl opacity-0 group-focus-within:opacity-10 blur transition-opacity" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 w-5 h-5 transition-colors z-10" />
+                    <input
+                      type={showRegConfirm ? "text" : "password"}
+                      value={regConfirmar}
+                      onChange={(e) => setRegConfirmar(e.target.value)}
+                      className={`${inputWithRight} ${regConfirmar.length > 0 ? regContraseña === regConfirmar ? "border-green-400 focus:border-green-500 focus:ring-green-500/50" : "border-red-300 focus:border-red-500" : ""}`}
+                      placeholder="Repite tu contraseña"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegConfirm(!showRegConfirm)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors z-10"
+                    >
+                      {showRegConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isRegLoading}
-                  className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group text-sm mt-3"
+                  className="relative w-full bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white font-bold py-4 px-4 rounded-xl transition-all duration-500 shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group text-sm mt-4"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isRegLoading ? <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Creando cuenta...
                       </> : <>
-                        <UserPlus className="w-4 h-4" />
+                        <UserPlus className="w-5 h-5" />
                         Crear Cuenta
                       </>}
                   </span>
