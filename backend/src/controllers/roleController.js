@@ -11,10 +11,10 @@ const getRoles = async (req, res, next) => {
              COALESCE(u.count, 0) as usuarios
       FROM rol r
       LEFT JOIN (
-        SELECT idRol, COUNT(*) as count 
-        FROM usuario 
-        GROUP BY idRol
-      ) u ON r.idRol = u.idRol
+        SELECT rol_id, COUNT(*) as count 
+        FROM usuarios 
+        GROUP BY rol_id
+      ) u ON r.idRol = u.rol_id
     `;
     const [rows] = await pool.query(query);
     
