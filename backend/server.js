@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./src/config/db');
 const { errorHandler } = require('./src/middlewares/errorMiddleware');
+const { swaggerUi, swaggerSpec } = require('./src/config/swagger');
 
 // Connect to Database
 connectDB();
@@ -18,7 +19,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Configure Helmet with relaxed directives for CSS and styles on the welcome route
+// Configure Helmet with relaxed directives (Swagger requires inline assets)
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -36,6 +37,15 @@ app.use(
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Swagger UI Route - Bypass Helmet CSP to render UI properly
+app.use('/api-docs', (req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com"
+  );
+  next();
+}, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Welcome Route with Premium Interactive REST API Documentation
 app.get('/', (req, res) => {
@@ -113,13 +123,34 @@ app.get('/', (req, res) => {
       color: var(--text-muted);
       font-size: 16px;
       font-weight: 300;
+      margin-bottom: 25px;
+    }
+    
+    .btn-swagger {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--primary) 0%, #ff6b8b 100%);
+      color: white;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 15px;
+      box-shadow: 0 8px 25px rgba(240, 84, 84, 0.3);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-swagger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(240, 84, 84, 0.4);
     }
     
     .status-bar {
       display: flex;
       justify-content: center;
       gap: 20px;
-      margin-top: 20px;
+      margin-top: 30px;
     }
     
     .status-badge {
@@ -233,6 +264,10 @@ app.get('/', (req, res) => {
       <div class="logo">🍳</div>
       <h1>Chazin Food RESTful API</h1>
       <p class="subtitle">Servicio de Backend Activo y Listo para Conexiones</p>
+      
+      <a href="/api-docs" class="btn-swagger">
+        ⚡ Ir a Swagger UI (Panel Interactivo)
+      </a>
       
       <div class="status-bar">
         <div class="status-badge">
