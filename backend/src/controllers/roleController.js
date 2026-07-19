@@ -6,26 +6,41 @@ const { pool } = connectDB;
 // @access  Public
 const getRoles = async (req, res, next) => {
   try {
+    // Corrected subquery to point to 'usuario' table instead of 'usuarios'
     const query = `
       SELECT r.idRol as id, r.nombre, r.descripcion, r.estado, 
              COALESCE(u.count, 0) as usuarios
       FROM rol r
       LEFT JOIN (
-        SELECT rol_id, COUNT(*) as count 
-        FROM usuarios 
-        GROUP BY rol_id
-      ) u ON r.idRol = u.rol_id
+        SELECT idRol, COUNT(*) as count 
+        FROM usuario 
+        GROUP BY idRol
+      ) u ON r.idRol = u.idRol
     `;
     const [rows] = await pool.query(query);
+
+    // Retrieve all role-permission associations from the database
+    const [permisosRows] = await pool.query(`
+      SELECT rp.idRol, p.nombrePermiso 
+      FROM rolpermiso rp 
+      JOIN permiso p ON rp.idPermiso = p.idPermiso
+    `);
     
-    const roles = rows.map(row => ({
-      id: row.id,
-      nombre: row.nombre,
-      descripcion: row.descripcion || '',
-      usuarios: Number(row.usuarios),
-      permisos: [],
-      estado: row.estado === 1 ? 'Activo' : 'Inactivo'
-    }));
+    const roles = rows.map(row => {
+      // Filter permissions belonging to this specific role
+      const rolPermisos = permisosRows
+        .filter(p => p.idRol === row.id)
+        .map(p => p.nombrePermiso);
+
+      return {
+        id: row.id,
+        nombre: row.nombre,
+        descripcion: row.descripcion || '',
+        usuarios: Number(row.usuarios),
+        permisos: rolPermisos,
+        estado: row.estado === 1 ? 'Activo' : 'Inactivo'
+      };
+    });
 
     res.json(roles);
   } catch (error) {
@@ -98,6 +113,58 @@ const updateRole = async (req, res, next) => {
   }
 };
 
+// @desc    Update permissions for a role
+// @route   PUT /api/roles/:id/permisos
+// @access  Public
+const updateRolePermisos = async (req, res, next) => {
+  const connection = await pool.getConnection();
+  try {
+    const { id } = req.params;
+    const { permisos } = req.body;
+
+    if (!Array.isArray(permisos)) {
+      res.status(400);
+      throw new Error('Los permisos deben ser enviados como una lista/arreglo');
+    }
+
+    const checkQuery = 'SELECT * FROM rol WHERE idRol = ?';
+    const [checkRows] = await connection.query(checkQuery, [id]);
+    if (checkRows.length === 0) {
+      res.status(404);
+      throw new Error('Rol no encontrado');
+    }
+
+    await connection.beginTransaction();
+
+    // 1. Clear existing permissions for this role
+    await connection.query('DELETE FROM rolpermiso WHERE idRol = ?', [id]);
+
+    // 2. Insert selected permissions by matching permission names
+    if (permisos.length > 0) {
+      // Find all matching permissions in one query
+      const [permDocs] = await connection.query(
+        'SELECT idPermiso, nombrePermiso FROM permiso WHERE nombrePermiso IN (?)',
+        [permisos]
+      );
+
+      for (const doc of permDocs) {
+        await connection.query(
+          'INSERT INTO rolpermiso (idRol, idPermiso) VALUES (?, ?)',
+          [id, doc.idPermiso]
+        );
+      }
+    }
+
+    await connection.commit();
+    res.json({ message: 'Permisos de rol actualizados exitosamente', permisos });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+};
+
 // @desc    Delete a role
 // @route   DELETE /api/roles/:id
 // @access  Public
@@ -132,5 +199,6 @@ module.exports = {
   getRoles,
   createRole,
   updateRole,
+  updateRolePermisos,
   deleteRole
 };

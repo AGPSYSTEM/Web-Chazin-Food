@@ -122,11 +122,30 @@ export function Roles() {
     );
   };
 
-  const savePermisos = () => {
-    setRoles((prev) => prev.map((r) => r.id === selectedRol.id ? { ...r, permisos: [...editingPermisos] } : r));
-    setShowPermisosModal(false);
-    setSelectedRol(null);
-    showToast("Permisos actualizados correctamente");
+  const savePermisos = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/roles/${selectedRol.id}/permisos`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          permisos: editingPermisos,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al actualizar los permisos");
+      }
+
+      setRoles((prev) => prev.map((r) => r.id === selectedRol.id ? { ...r, permisos: [...editingPermisos] } : r));
+      setShowPermisosModal(false);
+      setSelectedRol(null);
+      showToast("Permisos actualizados correctamente");
+    } catch (error) {
+      console.error(error);
+      showToast("Error al actualizar los permisos");
+    }
   };
 
   const openEdit = (rol) => {
