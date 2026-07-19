@@ -11,7 +11,6 @@ const initCategoryDB = async () => {
         estado TINYINT DEFAULT 1
       )
     `);
-    console.log('Tabla "categoria_insumo" inicializada correctamente.');
   } catch (error) {
     console.error('Error al inicializar la tabla "categoria_insumo":', error.message);
   }

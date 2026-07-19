@@ -64,7 +64,7 @@ export function Usuarios() {
   const fetchUsers = async () => {
     try {
       const savedUser = JSON.parse(localStorage.getItem("chazin_user") || "{}");
-      const response = await fetch("http://localhost:5000/api/users", {
+      const response = await fetch("http://localhost:5000/api/usuarios", {
         headers: {
           "Authorization": `Bearer ${savedUser.token}`
         }
@@ -122,7 +122,7 @@ export function Usuarios() {
 
     try {
       const savedUser = JSON.parse(localStorage.getItem("chazin_user") || "{}");
-      const response = await fetch(`http://localhost:5000/api/users/${selectedUsuario.idUsuario}`, {
+      const response = await fetch(`http://localhost:5000/api/usuarios/${selectedUsuario.idUsuario}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -189,7 +189,7 @@ export function Usuarios() {
 
     try {
       const savedUser = JSON.parse(localStorage.getItem("chazin_user") || "{}");
-      const response = await fetch(`http://localhost:5000/api/users/${selectedUsuario.idUsuario}`, {
+      const response = await fetch(`http://localhost:5000/api/usuarios/${selectedUsuario.idUsuario}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -225,7 +225,7 @@ export function Usuarios() {
     if (!selectedUsuario) return;
     try {
       const savedUser = JSON.parse(localStorage.getItem("chazin_user") || "{}");
-      const response = await fetch(`http://localhost:5000/api/users/${selectedUsuario.idUsuario}`, {
+      const response = await fetch(`http://localhost:5000/api/usuarios/${selectedUsuario.idUsuario}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${savedUser.token}`
@@ -262,7 +262,7 @@ export function Usuarios() {
 
     try {
       const savedUser = JSON.parse(localStorage.getItem("chazin_user") || "{}");
-      const response = await fetch("http://localhost:5000/api/users", {
+      const response = await fetch("http://localhost:5000/api/usuarios", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

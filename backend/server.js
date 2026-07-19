@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./src/config/db');
 const { errorHandler } = require('./src/middlewares/errorMiddleware');
+const { swaggerUi, swaggerSpec } = require('./src/config/swagger');
 
 // Connect to Database
 connectDB();
@@ -17,28 +18,42 @@ const app = express();
 // Middlewares
 app.use(express.json());
 app.use(cors());
-app.use(helmet());
+
+// Configure Helmet - disable CSP entirely so Swagger UI renders without issues
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Welcome Route
+// Swagger UI served at /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { background-color: #F05454; }',
+  customSiteTitle: 'Chazin Food - API Docs'
+}));
+
+// Root route redirects directly to Swagger UI
 app.get('/', (req, res) => {
-  res.json({ message: 'Bienvenido a la API de Chazin Food!' });
+  res.redirect('/api-docs');
 });
 
-app.use('/api/auth', require('./src/routes/authRoutes'));
-app.use('/api/categories', require('./src/routes/categoryRoutes'));
-app.use('/api/users', require('./src/routes/userRoutes'));
-app.use('/api/products', require('./src/routes/productRoutes'));
-app.use('/api/orders', require('./src/routes/orderRoutes'));
+// APIs in Spanish
+app.use('/api/autenticacion', require('./src/routes/authRoutes'));
+app.use('/api/categorias', require('./src/routes/categoryRoutes'));
+app.use('/api/usuarios', require('./src/routes/userRoutes'));
+app.use('/api/productos', require('./src/routes/productRoutes'));
+app.use('/api/pedidos', require('./src/routes/orderRoutes'));
 app.use('/api/roles', require('./src/routes/roleRoutes'));
 app.use('/api/insumos', require('./src/routes/insumoRoutes'));
 app.use('/api/categorias-insumo', require('./src/routes/categoriaInsumoRoutes'));
 app.use('/api/insumos-preparados', require('./src/routes/insumoPreparadoRoutes'));
 app.use('/api/proveedores', require('./src/routes/proveedorRoutes'));
 app.use('/api/trazabilidad', require('./src/routes/trazabilidadRoutes'));
+
 // Error Handler Middleware
 app.use(errorHandler);
 
