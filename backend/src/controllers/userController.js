@@ -3,18 +3,17 @@ const User = require('../models/User');
 
 const generateToken = (idUsuario) => {
   return jwt.sign({ id: idUsuario }, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood', {
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood', {
     expiresIn: '30d',
   });
 };
 
-// @desc    Register a new user
+// @desc    Register a new client user
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
     const {
+      idUsuario, // document number as ID
       nombre,
       apellidos,
       apellido,
@@ -23,105 +22,60 @@ const registerUser = async (req, res, next) => {
       contrasena,
       contraseña,
       password,
-      idRol,
-      rol_id,
-      id_rol,
-      rol,
       tipoDocumento,
       documento,
-      telefono
+      telefono,
+      direccion
     } = req.body;
-    
+
+    const targetIdUsuario = idUsuario || documento;
     const targetEmail = email || correo;
     const targetPassword = contraseña || contrasena || password;
     const targetApellidos = apellidos || apellido;
-    const targetDocumento = tipoDocumento || documento;
-    const targetRolId = idRol || rol_id || id_rol;
+    const targetDocumento = tipoDocumento || 'C.C.';
 
-    if (!nombre || !targetEmail || !targetPassword) {
+    if (!targetIdUsuario || !nombre || !targetEmail || !targetPassword) {
       res.status(400);
-      throw new Error('Por favor ingrese todos los campos requeridos (nombre, email, contrasena)');
-    const { nombre, correo, email, contrase\u00f1a, contrasena, password, rol } = req.body;
-    const {
-      nombre,
-      apellido,
-      correo,
-      email,
-      contraseña,
-      contrasena,
-      password,
-      rol_id,
-      idRol,
-      rol,
-      telefono,
-      imagen
-    } = req.body;
-    
-    const targetEmail = email || correo;
-    const targetPassword = contraseña || contrasena || password;
-
-    if (!nombre || !targetEmail || !targetPassword) {
-      res.status(400);
-      throw new Error('Por favor ingrese todos los campos requeridos (nombre, correo, contrase\u00f1a)');
-      throw new Error('Por favor ingrese todos los campos requeridos (nombre, email, contrasena)');
+      throw new Error('Por favor ingrese todos los campos requeridos (documento, nombre, email, contraseña)');
     }
 
     const userExists = await User.findByEmail(targetEmail);
     if (userExists) {
       res.status(400);
-      throw new Error('El usuario ya existe');
+      throw new Error('El usuario ya existe con ese correo');
     }
 
     const user = await User.create({
+      idUsuario: parseInt(targetIdUsuario),
       nombre,
       apellidos: targetApellidos,
       tipoDocumento: targetDocumento,
       email: targetEmail,
       contrasena: targetPassword,
-      idRol: targetRolId,
-      rol,
+      idRol: 3, // Client role
       telefono,
+      direccion,
       estado: 'ACTIVO'
-      correo: targetEmail,
-      contrasena: targetPassword,
-      rol: rol || 'Cliente'
-      apellido,
-      email: targetEmail,
-      contrasena: targetPassword,
-      rol_id,
-      idRol,
-      rol,
-      telefono,
-      imagen
     });
 
     if (user) {
       res.status(201).json({
         idUsuario: user.idUsuario,
+        _id: user.idUsuario, // Backward compatibility
+        id: user.idUsuario, // Backward compatibility
         nombre: user.nombre,
         apellidos: user.apellidos,
+        apellido: user.apellidos, // Backward compatibility
         tipoDocumento: user.tipoDocumento,
         email: user.email,
-        idRol: user.idRol,
-        rol: user.rol,
-        telefono: user.telefono,
-        estado: user.estado,
-        _id: user.idUsuario,
-        idUsuario: user.idUsuario,
-        _id: user.id,
-        idUsuario: user.id, // Backward compatibility
-        id: user.id,
-        nombre: user.nombre,
-        apellido: user.apellido,
-        email: user.email,
         correo: user.email, // Backward compatibility
-        rol_id: user.rol_id,
+        idRol: user.idRol,
+        rol_id: user.idRol, // Backward compatibility
         rol: user.rol,
-        token: generateToken(user.idUsuario),
         telefono: user.telefono,
-        imagen: user.imagen,
+        direccion: user.direccion,
         estado: user.estado,
-        token: generateToken(user.id),
+        token: generateToken(user.idUsuario),
       });
     } else {
       res.status(400);
@@ -145,18 +99,6 @@ const loginUser = async (req, res, next) => {
     if (!targetEmail || !targetPassword) {
       res.status(400);
       throw new Error('Por favor ingrese email y contraseña');
-    const { correo, email, contrase\u00f1a, contrasena, password } = req.body;
-    const { correo, email, contraseña, contrasena, password } = req.body;
-
-    const targetEmail = email || correo;
-    const targetPassword = contraseña || contrasena || password;
-
-    if (!targetEmail || !targetPassword) {
-      res.status(400);
-      throw new Error('Por favor ingrese correo y contrase\u00f1a');
-
-      throw new Error('Por favor ingrese email y contrase\u00f1a');
-
     }
 
     const user = await User.findByEmail(targetEmail);
@@ -166,11 +108,8 @@ const loginUser = async (req, res, next) => {
       throw new Error('Correo o contraseña incorrectos');
     }
 
-    if (user.estado === 'INACTIVO') {
-      throw new Error('Correo o contrase\u00f1a incorrectos');
-    }
-
-    if (user.estado === 0) {
+    // Check if user is active (supports both enum and numeric)
+    if (user.estado === 'INACTIVO' || user.estado === 0 || user.estado === '0') {
       res.status(401);
       throw new Error('Esta cuenta ha sido desactivada');
     }
@@ -179,35 +118,25 @@ const loginUser = async (req, res, next) => {
     if (isMatch) {
       res.json({
         idUsuario: user.idUsuario,
+        _id: user.idUsuario, // Backward compatibility
+        id: user.idUsuario, // Backward compatibility
         nombre: user.nombre,
         apellidos: user.apellidos,
+        apellido: user.apellidos, // Backward compatibility
         tipoDocumento: user.tipoDocumento,
         email: user.email,
-        idRol: user.idRol,
-        rol: user.rol,
-        telefono: user.telefono,
-        estado: user.estado,
-        _id: user.idUsuario,
-        idUsuario: user.idUsuario,
-        _id: user.id,
-        idUsuario: user.id, // Backward compatibility
-        id: user.id,
-        nombre: user.nombre,
-        apellido: user.apellido,
-        email: user.email,
         correo: user.email, // Backward compatibility
-        rol_id: user.rol_id,
+        idRol: user.idRol,
+        rol_id: user.idRol, // Backward compatibility
         rol: user.rol,
-        token: generateToken(user.idUsuario),
         telefono: user.telefono,
-        imagen: user.imagen,
+        direccion: user.direccion,
         estado: user.estado,
-        token: generateToken(user.id),
+        token: generateToken(user.idUsuario),
       });
     } else {
       res.status(401);
       throw new Error('Correo o contraseña incorrectos');
-      throw new Error('Correo o contrase\u00f1a incorrectos');
     }
   } catch (error) {
     next(error);
@@ -222,31 +151,19 @@ const getUserProfile = async (req, res, next) => {
     if (req.user) {
       res.json({
         idUsuario: req.user.idUsuario,
+        _id: req.user.idUsuario, // Backward compatibility
+        id: req.user.idUsuario, // Backward compatibility
         nombre: req.user.nombre,
         apellidos: req.user.apellidos,
+        apellido: req.user.apellidos, // Backward compatibility
         tipoDocumento: req.user.tipoDocumento,
         email: req.user.email,
-        idRol: req.user.idRol,
-        rol: req.user.rol,
-        telefono: req.user.telefono,
-        estado: req.user.estado,
-      });
-    // req.user is populated by protect middleware
-    if (req.user) {
-      res.json(req.user);
-    if (req.user) {
-      res.json({
-        _id: req.user.id,
-        idUsuario: req.user.id, // Backward compatibility
-        id: req.user.id,
-        nombre: req.user.nombre,
-        apellido: req.user.apellido,
-        email: req.user.email,
         correo: req.user.email, // Backward compatibility
-        rol_id: req.user.rol_id,
+        idRol: req.user.idRol,
+        rol_id: req.user.idRol, // Backward compatibility
         rol: req.user.rol,
         telefono: req.user.telefono,
-        imagen: req.user.imagen,
+        direccion: req.user.direccion,
         estado: req.user.estado,
       });
     } else {
@@ -263,7 +180,7 @@ const getUserProfile = async (req, res, next) => {
 // @access  Private
 const updateUserProfile = async (req, res, next) => {
   try {
-    const userId = req.user.idUsuario;
+    const userId = req.user.idUsuario || req.user.id || req.user._id;
     const {
       nombre,
       apellidos,
@@ -279,7 +196,8 @@ const updateUserProfile = async (req, res, next) => {
       rol,
       tipoDocumento,
       documento,
-      telefono
+      telefono,
+      direccion
     } = req.body;
 
     const targetEmail = email || correo;
@@ -287,38 +205,14 @@ const updateUserProfile = async (req, res, next) => {
     const targetApellidos = apellidos || apellido;
     const targetDocumento = tipoDocumento || documento;
     const targetRolId = idRol || rol_id || id_rol;
-    const userId = req.user.idUsuario || req.user._id;
-    const { nombre, correo, email, contrase\u00f1a, contrasena, password } = req.body;
 
-    const targetEmail = correo || email;
-    const targetPassword = contrase\u00f1a || contrasena || password;
-    const userId = req.user.id || req.user.idUsuario || req.user._id;
-    const {
-      nombre,
-      apellido,
-      correo,
-      email,
-      contraseña,
-      contrasena,
-      password,
-      rol_id,
-      idRol,
-      rol,
-      telefono,
-      imagen
-    } = req.body;
-
-    const targetEmail = email || correo;
-    const targetPassword = contraseña || contrasena || password;
     const user = await User.findById(userId);
     if (!user) {
       res.status(404);
       throw new Error('Usuario no encontrado');
     }
 
-    if (targetEmail && targetEmail !== user.email) {
     // If changing email, make sure it's not taken
-    if (targetEmail && targetEmail !== user.correo) {
     if (targetEmail && targetEmail !== user.email) {
       const userExists = await User.findByEmail(targetEmail);
       if (userExists) {
@@ -335,43 +229,25 @@ const updateUserProfile = async (req, res, next) => {
       contrasena: targetPassword,
       idRol: targetRolId,
       rol,
-      telefono
+      telefono,
+      direccion
     });
 
     res.json({
       idUsuario: updatedUser.idUsuario,
+      _id: updatedUser.idUsuario, // Backward compatibility
+      id: updatedUser.idUsuario, // Backward compatibility
       nombre: updatedUser.nombre,
       apellidos: updatedUser.apellidos,
+      apellido: updatedUser.apellidos, // Backward compatibility
       tipoDocumento: updatedUser.tipoDocumento,
       email: updatedUser.email,
-      idRol: updatedUser.idRol,
-      rol: updatedUser.rol,
-      telefono: updatedUser.telefono,
-      estado: updatedUser.estado,
-      correo: targetEmail,
-      contrasena: targetPassword
-      apellido,
-      email: targetEmail,
-      contrasena: targetPassword,
-      rol_id,
-      idRol,
-      rol,
-      telefono,
-      imagen
-    });
-
-    res.json({
-      _id: updatedUser.id,
-      idUsuario: updatedUser.id, // Backward compatibility
-      id: updatedUser.id,
-      nombre: updatedUser.nombre,
-      apellido: updatedUser.apellido,
-      email: updatedUser.email,
       correo: updatedUser.email, // Backward compatibility
-      rol_id: updatedUser.rol_id,
+      idRol: updatedUser.idRol,
+      rol_id: updatedUser.idRol, // Backward compatibility
       rol: updatedUser.rol,
       telefono: updatedUser.telefono,
-      imagen: updatedUser.imagen,
+      direccion: updatedUser.direccion,
       estado: updatedUser.estado,
     });
   } catch (error) {
@@ -384,8 +260,7 @@ const updateUserProfile = async (req, res, next) => {
 // @access  Private
 const deactivateUser = async (req, res, next) => {
   try {
-    const userId = req.user.idUsuario;
-    const userId = req.user.idUsuario || req.user._id;
+    const userId = req.user.idUsuario || req.user.id || req.user._id;
     const user = await User.findById(userId);
 
     if (!user) {
@@ -400,10 +275,176 @@ const deactivateUser = async (req, res, next) => {
   }
 };
 
+// ── CRUD ADMINISTRATIVO DE USUARIOS ──
+
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.getAll();
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create user from admin panel
+// @route   POST /api/users
+// @access  Private/Admin
+const createUser = async (req, res, next) => {
+  try {
+    const {
+      idUsuario, // Custom ID as document number
+      nombre,
+      apellidos,
+      apellido,
+      email,
+      correo,
+      contrasena,
+      contraseña,
+      password,
+      idRol,
+      rol_id,
+      id_rol,
+      rol,
+      tipoDocumento,
+      documento,
+      telefono,
+      direccion,
+      estado
+    } = req.body;
+
+    const targetIdUsuario = idUsuario || documento;
+    const targetEmail = email || correo;
+    const targetPassword = contraseña || contrasena || password;
+    const targetApellidos = apellidos || apellido;
+    const targetDocumento = tipoDocumento || 'C.C.';
+    const targetRolId = idRol || rol_id || id_rol;
+
+    if (!targetIdUsuario || !nombre || !targetEmail || !targetPassword) {
+      res.status(400);
+      throw new Error('Por favor ingrese todos los campos requeridos (documento, nombre, email, contraseña)');
+    }
+
+    const userExists = await User.findByEmail(targetEmail);
+    if (userExists) {
+      res.status(400);
+      throw new Error('El usuario ya existe con ese correo');
+    }
+
+    const newUser = await User.create({
+      idUsuario: parseInt(targetIdUsuario),
+      nombre,
+      apellidos: targetApellidos,
+      tipoDocumento: targetDocumento,
+      email: targetEmail,
+      contrasena: targetPassword,
+      idRol: targetRolId,
+      rol,
+      telefono,
+      direccion,
+      estado: estado || 'ACTIVO'
+    });
+
+    res.status(201).json(newUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update user from admin panel
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      nombre,
+      apellidos,
+      apellido,
+      email,
+      correo,
+      contrasena,
+      contraseña,
+      password,
+      idRol,
+      rol_id,
+      id_rol,
+      rol,
+      tipoDocumento,
+      documento,
+      telefono,
+      direccion,
+      estado
+    } = req.body;
+
+    const targetEmail = email || correo;
+    const targetPassword = contraseña || contrasena || password;
+    const targetApellidos = apellidos || apellido;
+    const targetDocumento = tipoDocumento || documento;
+    const targetRolId = idRol || rol_id || id_rol;
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(404);
+      throw new Error('Usuario no encontrado');
+    }
+
+    if (targetEmail && targetEmail !== user.email) {
+      const userExists = await User.findByEmail(targetEmail);
+      if (userExists) {
+        res.status(400);
+        throw new Error('El correo ya está registrado por otro usuario');
+      }
+    }
+
+    const updatedUser = await User.update(id, {
+      nombre,
+      apellidos: targetApellidos,
+      tipoDocumento: targetDocumento,
+      email: targetEmail,
+      contrasena: targetPassword,
+      idRol: targetRolId,
+      rol,
+      telefono,
+      direccion,
+      estado
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete/Deactivate user from admin panel
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+const deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(404);
+      throw new Error('Usuario no encontrado');
+    }
+
+    await User.deactivate(id);
+    res.json({ message: 'Usuario desactivado correctamente' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
   deactivateUser,
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser
 };

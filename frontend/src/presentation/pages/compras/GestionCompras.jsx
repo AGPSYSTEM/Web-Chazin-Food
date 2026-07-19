@@ -20,7 +20,7 @@ const detalleCompra = [
 export function GestionCompras() {
   const { user } = useAuth();
   const { success, confirmAction } = useNotifications();
-  const isAdmin = user?.rol === "administrador";
+  const isAdmin = user?.rol?.toLowerCase() === "administrador";
   const [compras, setCompras] = useState(comprasData);
   const handleAnular = async (compra) => {
     const confirmed = await confirmAction(

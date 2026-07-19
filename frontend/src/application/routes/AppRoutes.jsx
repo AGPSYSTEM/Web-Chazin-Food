@@ -27,8 +27,12 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.rol)) {
-    return <Navigate to="/" replace />;
+  if (allowedRoles && user) {
+    const userRol = user.rol?.toLowerCase();
+    const allowed = allowedRoles.map(r => r.toLowerCase());
+    if (!allowed.includes(userRol)) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <>{children}</>;
@@ -49,7 +53,9 @@ export function AppRoutes() {
     );
   }
 
-  if (user?.rol === 'cliente') {
+  const userRol = user?.rol?.toLowerCase();
+
+  if (userRol === 'cliente') {
     return (
       <Routes>
         <Route path="/" element={<ClienteLanding />} />
@@ -59,7 +65,7 @@ export function AppRoutes() {
     );
   }
 
-  if (user?.rol === 'cocinero') {
+  if (userRol === 'cocinero') {
     return (
       <Routes>
         <Route path="/" element={<CocineroDashboard />} />

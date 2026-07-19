@@ -5,19 +5,34 @@ const {
   loginUser,
   getUserProfile,
   updateUserProfile,
-  deactivateUser
+  deactivateUser,
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser
 } = require('../controllers/userController');
 const { protect } = require('../middlewares/authMiddleware');
 
+// Public auth endpoints
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 
+// User profile endpoints
 router.route('/profile')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile)
   .delete(protect, deactivateUser);
 
-// Alternative endpoint to deactivate
+// Alternative endpoint to deactivate profile
 router.put('/deactivate', protect, deactivateUser);
+
+// Administrative CRUD endpoints (usually restricted to admin, protected by protect middleware)
+router.route('/')
+  .get(protect, getUsers)
+  .post(protect, createUser);
+
+router.route('/:id')
+  .put(protect, updateUser)
+  .delete(protect, deleteUser);
 
 module.exports = router;
