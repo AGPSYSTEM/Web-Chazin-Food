@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
 const User = require('../models/User');
 
 const generateToken = (idUsuario) => {
@@ -540,41 +541,34 @@ const forgotPassword = async (req, res, next) => {
 </body>
 </html>`;
 
-    // Send email via Brevo API
-    const brevoApiKey = process.env.BREVO_API_KEY;
+    // Send email via Nodemailer
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = Number(process.env.SMTP_PORT) || 465;
+    const smtpUser = process.env.SMTP_USER || 'gomezpavas34@gmail.com';
+    const smtpPass = process.env.SMTP_PASS;
 
-    if (brevoApiKey) {
+    if (smtpPass) {
       try {
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'api-key': brevoApiKey,
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            sender: {
-              name: 'Chazin Food',
-              email: process.env.BREVO_SENDER_EMAIL || 'noreply@chazinfood.com'
-            },
-            to: [{
-              email: user.email,
-              name: `${user.nombre} ${user.apellidos || ''}`
-            }],
-            subject: '🔐 Restablecer Contraseña - Chazin Food',
-            htmlContent
-          })
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465, // True for 465, false for other ports (like 587)
+          auth: {
+            user: smtpUser,
+            pass: smtpPass
+          }
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error de Brevo:', errorData);
-          // Still return success to not block the user
-        } else {
-          console.log(`✅ Correo de recuperación enviado a ${user.email}`);
-        }
+        await transporter.sendMail({
+          from: `"Chazin Food" <${smtpUser}>`,
+          to: user.email,
+          subject: '🔐 Restablecer Contraseña - Chazin Food',
+          html: htmlContent
+        });
+
+        console.log(`✅ Correo de recuperación enviado a ${user.email} usando Nodemailer`);
       } catch (emailError) {
-        console.error('Error al enviar correo via Brevo:', emailError.message);
+        console.error('Error al enviar correo via Nodemailer:', emailError.message);
       }
     } else {
       // Development fallback: log the reset link to console
