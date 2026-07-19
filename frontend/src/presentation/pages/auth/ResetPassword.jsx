@@ -42,14 +42,34 @@ export function ResetPassword() {
       return;
     }
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:5000/api/users/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          email: decodeURIComponent(email),
+          contrasena: nuevaContrase\u00F1a
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setResetSuccess(true);
+        toast.success("\xA1Contrase\xF1a actualizada!", "Tu contrase\xF1a ha sido restablecida correctamente");
+        setTimeout(() => {
+          navigate("/login");
+        }, 3e3);
+      } else {
+        toast.error("Error", data.message || "No se pudo restablecer la contrase\xF1a");
+      }
+    } catch (err) {
+      console.error("Error en reset-password:", err);
+      toast.error("Error de conexi\xF3n", "No se pudo conectar con el servidor");
+    } finally {
       setIsLoading(false);
-      setResetSuccess(true);
-      toast.success("\xA1Contrase\xF1a actualizada!", "Tu contrase\xF1a ha sido restablecida correctamente");
-      setTimeout(() => {
-        navigate("/login");
-      }, 3e3);
-    }, 2e3);
+    }
   };
   if (!token || !email) {
     return null;
