@@ -20,15 +20,27 @@ export function ForgotPassword() {
       return;
     }
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:5000/api/users/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: correo })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setEmailSent(true);
+        toast.success("\xA1Correo enviado!", "Revisa tu bandeja de entrada para restablecer tu contrase\xF1a");
+      } else {
+        toast.error("Error", data.message || "No se pudo enviar el correo de recuperaci\xF3n");
+      }
+    } catch (err) {
+      console.error("Error en forgot-password:", err);
+      toast.error("Error de conexi\xF3n", "No se pudo conectar con el servidor");
+    } finally {
       setIsLoading(false);
-      setEmailSent(true);
-      toast.success("\xA1Correo enviado!", "Revisa tu bandeja de entrada para restablecer tu contrase\xF1a");
-      setTimeout(() => {
-        const mockToken = btoa(correo + Date.now());
-        navigate(`/reset-password?token=${mockToken}&email=${encodeURIComponent(correo)}`);
-      }, 3e3);
-    }, 2e3);
+    }
   };
   return <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center p-4">
       {
@@ -147,21 +159,12 @@ export function ForgotPassword() {
                 {correo}
               </p>
               <p className="text-center text-sm text-gray-500">
-                Redirigiendo a la página de restablecimiento...
+                Revisa tu bandeja de entrada y haz clic en el enlace para restablecer tu contraseña.
               </p>
-
-              {
-    /* Loading spinner */
-  }
-              <div className="flex justify-center mt-6">
-                <div className="w-8 h-8 border-3 border-red-200 border-t-red-600 rounded-full animate-spin" />
-              </div>
             </>}
         </div>
 
-        {
-    /* Help text */
-  }
+        {/* Help text */}
         <p className="text-center text-sm text-gray-600 mt-6">
           ¿No recibiste el correo?{" "}
           <button

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 const generateToken = (idUsuario) => {
@@ -437,6 +438,205 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+// @desc    Request password reset (sends email via Brevo)
+// @route   POST /api/users/forgot-password
+// @access  Public
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email, correo } = req.body;
+    const targetEmail = email || correo;
+
+    if (!targetEmail) {
+      res.status(400);
+      throw new Error('El correo electrónico es requerido');
+    }
+
+    const user = await User.findByEmail(targetEmail);
+
+    if (!user) {
+      // Return 200 anyway to not reveal if an email exists (security best practice)
+      return res.json({ message: 'Si el correo está registrado, recibirás las instrucciones para restablecer tu contraseña.' });
+    }
+
+    // Generate a reset token signed with JWT_SECRET + user's current hashed password
+    // This makes the token auto-invalidate when the password changes
+    const jwtSecret = process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood';
+    const resetToken = jwt.sign(
+      { id: user.idUsuario, email: user.email },
+      jwtSecret + user.contrasena,
+      { expiresIn: '1h' }
+    );
+
+    // Build the reset link pointing to the frontend
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+
+    // Beautiful branded HTML email template
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background-color:#f4f6f9;-webkit-font-smoothing:antialiased;">
+  <div style="width:100%;background-color:#f4f6f9;padding:40px 0;">
+    <div style="max-width:540px;margin:0 auto;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.05);border:1px solid #eef2f5;">
+      <!-- Header gradient bar -->
+      <div style="height:6px;background:linear-gradient(90deg,#F05454 0%,#ff6b8b 100%);"></div>
+      
+      <!-- Content -->
+      <div style="padding:40px;text-align:center;">
+        <!-- Logo circle -->
+        <div style="display:inline-block;width:80px;height:80px;background:linear-gradient(135deg,#F05454 0%,#ff6b8b 100%);border-radius:50%;margin-bottom:24px;box-shadow:0 8px 25px rgba(240,84,84,0.3);">
+          <span style="display:block;color:#ffffff;font-size:36px;line-height:80px;font-weight:bold;">🍳</span>
+        </div>
+        
+        <!-- Brand name -->
+        <h2 style="font-size:14px;color:#F05454;text-transform:uppercase;letter-spacing:3px;margin:0 0 8px 0;font-weight:700;">Chazin Food</h2>
+        
+        <!-- Title -->
+        <h1 style="font-size:26px;color:#30475E;margin:0 0 16px 0;font-weight:700;">Restablecer Contraseña</h1>
+        
+        <!-- Greeting -->
+        <p style="color:#6c7a89;font-size:15px;line-height:1.7;margin:0 0 24px 0;">
+          Hola, <strong style="color:#30475E;">${user.nombre} ${user.apellidos || ''}</strong>.<br>
+          Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong style="color:#F05454;">Chazin Food</strong>.
+        </p>
+        
+        <p style="color:#6c7a89;font-size:15px;line-height:1.7;margin:0 0 32px 0;">
+          Para continuar con el proceso, haz clic en el botón de abajo:
+        </p>
+        
+        <!-- CTA Button -->
+        <div style="margin-bottom:32px;">
+          <a href="${resetLink}" target="_blank" style="display:inline-block;background:linear-gradient(90deg,#F05454 0%,#ff6b8b 100%);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:12px;font-weight:bold;font-size:15px;box-shadow:0 6px 20px rgba(240,84,84,0.25);letter-spacing:0.5px;">
+            Restablecer Contraseña
+          </a>
+        </div>
+        
+        <!-- Security note -->
+        <div style="background-color:#fff8f8;border:1px solid #ffe0e0;border-radius:12px;padding:16px;margin-bottom:24px;">
+          <p style="color:#e74c3c;font-size:13px;margin:0;line-height:1.5;">
+            ⚠️ Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.<br>
+            El enlace expirará en <strong>1 hora</strong>.
+          </p>
+        </div>
+        
+        <!-- Fallback link -->
+        <p style="font-size:11px;color:#95a5a6;margin:20px 0 0 0;word-break:break-all;line-height:1.6;">
+          Si tienes problemas con el botón, copia y pega este enlace en tu navegador:<br>
+          <a href="${resetLink}" style="color:#F05454;text-decoration:underline;">${resetLink}</a>
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color:#fafbfc;padding:24px;text-align:center;border-top:1px solid #eef2f5;">
+        <p style="color:#95a5a6;font-size:12px;margin:0;">&copy; 2026 Chazin Food. Todos los derechos reservados.</p>
+        <p style="color:#bdc3c7;font-size:11px;margin:8px 0 0 0;">Este es un correo automático, por favor no respondas a este mensaje.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    // Send email via Brevo API
+    const brevoApiKey = process.env.BREVO_API_KEY;
+
+    if (brevoApiKey) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': brevoApiKey,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: {
+              name: 'Chazin Food',
+              email: process.env.BREVO_SENDER_EMAIL || 'noreply@chazinfood.com'
+            },
+            to: [{
+              email: user.email,
+              name: `${user.nombre} ${user.apellidos || ''}`
+            }],
+            subject: '🔐 Restablecer Contraseña - Chazin Food',
+            htmlContent
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Error de Brevo:', errorData);
+          // Still return success to not block the user
+        } else {
+          console.log(`✅ Correo de recuperación enviado a ${user.email}`);
+        }
+      } catch (emailError) {
+        console.error('Error al enviar correo via Brevo:', emailError.message);
+      }
+    } else {
+      // Development fallback: log the reset link to console
+      console.log('\n╔══════════════════════════════════════════════════════╗');
+      console.log('║  🔐 ENLACE DE RECUPERACIÓN DE CONTRASEÑA (DEV)      ║');
+      console.log('╠══════════════════════════════════════════════════════╣');
+      console.log(`║  Usuario: ${user.email}`);
+      console.log(`║  Link: ${resetLink}`);
+      console.log('╚══════════════════════════════════════════════════════╝\n');
+    }
+
+    res.json({ message: 'Si el correo está registrado, recibirás las instrucciones para restablecer tu contraseña.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reset password with token
+// @route   POST /api/users/reset-password
+// @access  Public
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, email, contrasena, contraseña, password } = req.body;
+    const newPassword = contrasena || contraseña || password;
+
+    if (!token || !email || !newPassword) {
+      res.status(400);
+      throw new Error('Token, email y nueva contraseña son requeridos');
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400);
+      throw new Error('La contraseña debe tener al menos 6 caracteres');
+    }
+
+    // Find user by email
+    const user = await User.findByEmail(email);
+    if (!user) {
+      res.status(404);
+      throw new Error('Usuario no encontrado');
+    }
+
+    // Verify the reset token (signed with JWT_SECRET + current hashed password)
+    const jwtSecret = process.env.JWT_SECRET || 'supersecretjwtkeyforchazinfood';
+    try {
+      jwt.verify(token, jwtSecret + user.contrasena);
+    } catch (tokenError) {
+      res.status(400);
+      throw new Error('El enlace de recuperación ha expirado o no es válido. Por favor solicita uno nuevo.');
+    }
+
+    // Update password using User.update (which auto-hashes the password)
+    await User.update(user.idUsuario, { contrasena: newPassword });
+
+    console.log(`✅ Contraseña restablecida para ${user.email}`);
+
+    res.json({ message: 'Contraseña restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -446,5 +646,7 @@ module.exports = {
   getUsers,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  forgotPassword,
+  resetPassword
 };

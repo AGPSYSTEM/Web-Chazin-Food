@@ -9,13 +9,17 @@ const {
   getUsers,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  forgotPassword,
+  resetPassword
 } = require('../controllers/userController');
 const { protect } = require('../middlewares/authMiddleware');
 
 // Public auth endpoints
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // User profile endpoints
 router.route('/profile')
