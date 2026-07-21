@@ -1,30 +1,9 @@
 import { createContext, useContext, useState, useEffect } from "react";
 const AuthContext = createContext(void 0);
-let MOCK_USERS = [
-  {
-    id: 1,
-    nombre: "Administrador Sistema",
-    correo: "admin@chazinfood.com",
-    contrase\u00F1a: "admin123",
-    rol: "administrador"
-  },
-  {
-    id: 2,
-    nombre: "Carlos Mart\xEDnez",
-    correo: "cocinero@chazinfood.com",
-    contrase\u00F1a: "cocina123",
-    rol: "cocinero"
-  },
-  {
-    id: 3,
-    nombre: "Mar\xEDa Garc\xEDa",
-    correo: "cliente@chazinfood.com",
-    contrase\u00F1a: "cliente123",
-    rol: "cliente"
-  }
-];
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  
   // Se deshabilita para que el proyecto siempre inicie en la pantalla de iniciar sesión.
   // useEffect(() => {
   //   const savedUser = localStorage.getItem("chazin_user");
@@ -32,45 +11,55 @@ export function AuthProvider({ children }) {
   //     setUser(JSON.parse(savedUser));
   //   }
   // }, []);
-  const login = (correo, contrase\u00F1a) => {
-    const foundUser = MOCK_USERS.find(
-      (u) => u.correo === correo && u.contrase\u00F1a === contrase\u00F1a
-    );
-    if (foundUser) {
-      const userData = {
-        id: foundUser.id,
-        nombre: foundUser.nombre,
-        correo: foundUser.correo,
-        rol: foundUser.rol
-      };
-      setUser(userData);
-      localStorage.setItem("chazin_user", JSON.stringify(userData));
-      return true;
+
+  const login = async (correo, contraseña) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/usuarios/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: correo, contrasena: contraseña })
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        localStorage.setItem("chazin_user", JSON.stringify(userData));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error en login:", err);
+      return false;
     }
-    return false;
   };
-  const register = (nombre, correo, contrase\u00F1a) => {
-    const exists = MOCK_USERS.find((u) => u.correo.toLowerCase() === correo.toLowerCase());
-    if (exists) {
-      return { success: false, message: "Ya existe una cuenta con ese correo electr\xF3nico" };
+
+  const register = async (userData) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/usuarios/registro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData)
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUser(data);
+        localStorage.setItem("chazin_user", JSON.stringify(data));
+        return { success: true, message: "¡Cuenta creada exitosamente!" };
+      }
+      return { success: false, message: data.message || "Error al crear la cuenta" };
+    } catch (err) {
+      console.error("Error en register:", err);
+      return { success: false, message: "Fallo de conexión al registrar cuenta" };
     }
-    const newUser = {
-      id: MOCK_USERS.length + 1,
-      nombre,
-      correo,
-      contrase\u00F1a,
-      rol: "cliente"
-    };
-    MOCK_USERS = [...MOCK_USERS, newUser];
-    const userData = { id: newUser.id, nombre, correo, rol: "cliente" };
-    setUser(userData);
-    localStorage.setItem("chazin_user", JSON.stringify(userData));
-    return { success: true, message: "\xA1Cuenta creada exitosamente!" };
   };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem("chazin_user");
   };
+
   return <AuthContext.Provider value={{
     user,
     login,
@@ -81,6 +70,7 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>;
 }
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
