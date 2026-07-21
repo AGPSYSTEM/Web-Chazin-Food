@@ -24,19 +24,24 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'No autorizado, esta cuenta ha sido desactivada' });
       }
 
+      // Check if user is administrator
+      if (!user.rol || user.rol.toLowerCase() !== 'administrador') {
+        return res.status(403).json({ message: 'No autorizado, solo el rol Administrador está permitido' });
+      }
+
       // Get user from the token (exclude password)
       const { contrasena, contraseña, ...userWithoutPassword } = user;
       req.user = userWithoutPassword;
 
-      next();
+      return next();
     } catch (error) {
       console.error('Error en autenticación de token:', error.message);
-      res.status(401).json({ message: 'No autorizado, token fallido' });
+      return res.status(401).json({ message: 'No autorizado, token fallido' });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: 'No autorizado, sin token' });
+    return res.status(401).json({ message: 'No autorizado, sin token' });
   }
 };
 
