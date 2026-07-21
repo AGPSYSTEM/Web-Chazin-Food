@@ -325,11 +325,327 @@ module.exports = {
  * 
  * /api/insumos:
  *   get:
- *     summary: Obtener lista de insumos
+ *     summary: Obtener lista de insumos activos
  *     tags: [Compras & Insumos]
  *     responses:
  *       200:
- *         description: Lista de insumos activos.
+ *         description: Lista de insumos activos obtenida exitosamente.
+ *   post:
+ *     summary: Crear un nuevo insumo
+ *     tags: [Compras & Insumos]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nombre
+ *               - idCategoriaInsumo
+ *               - stock
+ *               - unidadMedida
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *                 example: Harina de Trigo
+ *               idCategoriaInsumo:
+ *                 type: integer
+ *                 example: 1
+ *               stock:
+ *                 type: number
+ *                 example: 50
+ *               unidadMedida:
+ *                 type: string
+ *                 example: kg
+ *               precioUnitario:
+ *                 type: number
+ *                 example: 1200.00
+ *               idProveedor:
+ *                 type: integer
+ *                 example: 2
+ *               descripcion:
+ *                 type: string
+ *                 example: Harina de trigo refinada tipo 0000
+ *     responses:
+ *       201:
+ *         description: Insumo creado correctamente.
+ * 
+ * /api/insumos/deleted:
+ *   get:
+ *     summary: Obtener lista de insumos eliminados (papelera)
+ *     tags: [Compras & Insumos]
+ *     responses:
+ *       200:
+ *         description: Lista de insumos eliminados en la papelera.
+ * 
+ * /api/insumos/{id}:
+ *   get:
+ *     summary: Obtener insumo por ID
+ *     tags: [Compras & Insumos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo a obtener
+ *     responses:
+ *       200:
+ *         description: Insumo encontrado.
+ *       404:
+ *         description: Insumo no encontrado.
+ *   put:
+ *     summary: Actualizar un insumo existente
+ *     tags: [Compras & Insumos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               idCategoriaInsumo:
+ *                 type: integer
+ *               stock:
+ *                 type: number
+ *               unidadMedida:
+ *                 type: string
+ *               precioUnitario:
+ *                 type: number
+ *               idProveedor:
+ *                 type: integer
+ *               descripcion:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Insumo actualizado correctamente.
+ *       404:
+ *         description: Insumo no encontrado.
+ *   delete:
+ *     summary: Eliminar lógicamente un insumo (mover a papelera)
+ *     tags: [Compras & Insumos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo a eliminar lógicamente
+ *     responses:
+ *       200:
+ *         description: Insumo eliminado correctamente.
+ *       400:
+ *         description: El insumo está en uso.
+ *       404:
+ *         description: Insumo no encontrado.
+ * 
+ * /api/insumos/{id}/restore:
+ *   put:
+ *     summary: Restaurar un insumo eliminado de la papelera
+ *     tags: [Compras & Insumos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo a restaurar
+ *     responses:
+ *       200:
+ *         description: Insumo restaurado correctamente.
+ *       404:
+ *         description: Insumo no encontrado.
+ * 
+ * /api/insumos/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar permanentemente un insumo de la papelera
+ *     tags: [Compras & Insumos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo a eliminar de forma permanente
+ *     responses:
+ *       200:
+ *         description: Insumo eliminado permanentemente.
+ *       400:
+ *         description: El insumo no está en la papelera.
+ *       404:
+ *         description: Insumo no encontrado.
+ * 
+ * /api/insumos-preparados:
+ *   get:
+ *     summary: Obtener lista de insumos preparados activos
+ *     tags: [Insumos Preparados]
+ *     responses:
+ *       200:
+ *         description: Lista de insumos preparados activos.
+ *   post:
+ *     summary: Crear un nuevo insumo preparado con componentes
+ *     tags: [Insumos Preparados]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nombre
+ *               - unidadMedida
+ *               - precioVenta
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *                 example: Salsa Boloñesa Casa
+ *               descripcion:
+ *                 type: string
+ *                 example: Salsa boloñesa artesanal preparada con carne e insumos frescos
+ *               unidadMedida:
+ *                 type: string
+ *                 example: L
+ *               precioVenta:
+ *                 type: number
+ *                 example: 15000.00
+ *               componentes:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - idInsumo
+ *                     - cantidad
+ *                     - unidadMedida
+ *                     - precioUnitario
+ *                   properties:
+ *                     idInsumo:
+ *                       type: integer
+ *                       example: 1
+ *                     cantidad:
+ *                       type: number
+ *                       example: 0.5
+ *                     unidadMedida:
+ *                       type: string
+ *                       example: kg
+ *                     precioUnitario:
+ *                       type: number
+ *                       example: 5000.00
+ *     responses:
+ *       201:
+ *         description: Insumo preparado creado correctamente.
+ * 
+ * /api/insumos-preparados/deleted:
+ *   get:
+ *     summary: Obtener lista de insumos preparados eliminados (papelera)
+ *     tags: [Insumos Preparados]
+ *     responses:
+ *       200:
+ *         description: Lista de insumos preparados eliminados.
+ * 
+ * /api/insumos-preparados/{id}:
+ *   put:
+ *     summary: Actualizar un insumo preparado existente
+ *     tags: [Insumos Preparados]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo preparado a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               descripcion:
+ *                 type: string
+ *               unidadMedida:
+ *                 type: string
+ *               precioVenta:
+ *                 type: number
+ *               componentes:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     idInsumo:
+ *                       type: integer
+ *                     cantidad:
+ *                       type: number
+ *                     unidadMedida:
+ *                       type: string
+ *                     precioUnitario:
+ *                       type: number
+ *     responses:
+ *       200:
+ *         description: Insumo preparado actualizado correctamente.
+ *       404:
+ *         description: Insumo preparado no encontrado.
+ *   delete:
+ *     summary: Eliminar lógicamente un insumo preparado (mover a papelera)
+ *     tags: [Insumos Preparados]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo preparado a eliminar lógicamente
+ *     responses:
+ *       200:
+ *         description: Insumo preparado eliminado lógicamente.
+ *       404:
+ *         description: Insumo preparado no encontrado.
+ * 
+ * /api/insumos-preparados/{id}/restore:
+ *   put:
+ *     summary: Restaurar un insumo preparado eliminado de la papelera
+ *     tags: [Insumos Preparados]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo preparado a restaurar
+ *     responses:
+ *       200:
+ *         description: Insumo preparado restaurado correctamente.
+ *       404:
+ *         description: Insumo preparado no encontrado.
+ * 
+ * /api/insumos-preparados/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar permanentemente un insumo preparado de la papelera
+ *     tags: [Insumos Preparados]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del insumo preparado a eliminar permanentemente
+ *     responses:
+ *       200:
+ *         description: Insumo preparado eliminado permanentemente.
+ *       400:
+ *         description: El preparado no está en la papelera.
+ *       404:
+ *         description: Insumo preparado no encontrado.
  * 
  * /api/proveedores:
  *   get:
