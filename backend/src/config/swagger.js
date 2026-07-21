@@ -326,13 +326,13 @@ module.exports = {
  * /api/insumos:
  *   get:
  *     summary: Obtener lista de insumos activos
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     responses:
  *       200:
  *         description: Lista de insumos activos obtenida exitosamente.
  *   post:
  *     summary: Crear un nuevo insumo
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     requestBody:
  *       required: true
  *       content:
@@ -373,7 +373,7 @@ module.exports = {
  * /api/insumos/deleted:
  *   get:
  *     summary: Obtener lista de insumos eliminados (papelera)
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     responses:
  *       200:
  *         description: Lista de insumos eliminados en la papelera.
@@ -381,7 +381,7 @@ module.exports = {
  * /api/insumos/{id}:
  *   get:
  *     summary: Obtener insumo por ID
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -396,7 +396,7 @@ module.exports = {
  *         description: Insumo no encontrado.
  *   put:
  *     summary: Actualizar un insumo existente
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -432,7 +432,7 @@ module.exports = {
  *         description: Insumo no encontrado.
  *   delete:
  *     summary: Eliminar lógicamente un insumo (mover a papelera)
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -451,7 +451,7 @@ module.exports = {
  * /api/insumos/{id}/restore:
  *   put:
  *     summary: Restaurar un insumo eliminado de la papelera
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -468,7 +468,7 @@ module.exports = {
  * /api/insumos/{id}/permanent:
  *   delete:
  *     summary: Eliminar permanentemente un insumo de la papelera
- *     tags: [Compras & Insumos]
+ *     tags: [Insumos]
  *     parameters:
  *       - in: path
  *         name: id
@@ -646,12 +646,4 @@ module.exports = {
  *         description: El preparado no está en la papelera.
  *       404:
  *         description: Insumo preparado no encontrado.
- * 
- * /api/proveedores:
- *   get:
- *     summary: Obtener lista de proveedores
- *     tags: [Compras & Insumos]
- *     responses:
- *       200:
- *         description: Lista de proveedores.
  */
