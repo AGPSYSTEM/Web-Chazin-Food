@@ -293,6 +293,78 @@ module.exports = {
  *     responses:
  *       200:
  *         description: Lista de roles del sistema.
+ *   post:
+ *     summary: Crear un nuevo rol
+ *     tags: [Roles]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nombre
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *                 example: Auxiliar de Cocina
+ *               descripcion:
+ *                 type: string
+ *                 example: Apoyo en preparación de insumos
+ *     responses:
+ *       201:
+ *         description: Rol creado exitosamente.
+ *       400:
+ *         description: Nombre del rol es requerido.
+ * 
+ * /api/roles/{idRol}:
+ *   put:
+ *     summary: Actualizar un rol existente
+ *     tags: [Roles]
+ *     parameters:
+ *       - in: path
+ *         name: idRol
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del rol a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nombre
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *                 example: Cocinero Principal
+ *               descripcion:
+ *                 type: string
+ *                 example: Encargado de cocina y producción
+ *     responses:
+ *       200:
+ *         description: Rol actualizado exitosamente.
+ *       404:
+ *         description: Rol no encontrado.
+ *   delete:
+ *     summary: Eliminar un rol existente
+ *     tags: [Roles]
+ *     parameters:
+ *       - in: path
+ *         name: idRol
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del rol a eliminar
+ *     responses:
+ *       200:
+ *         description: Rol eliminado correctamente.
+ *       400:
+ *         description: No se puede eliminar el rol de Administrador.
+ *       404:
+ *         description: Rol no encontrado.
  * 
  * /api/roles/{idRol}/permisos:
  *   put:
