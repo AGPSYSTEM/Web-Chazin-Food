@@ -3,6 +3,7 @@
 **/node/
 **/dist/
 .env
+.vite/
 *.log
 
 # IDE and OS files
