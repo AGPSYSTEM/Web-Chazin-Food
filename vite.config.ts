@@ -29,6 +29,7 @@ export default defineConfig({
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
