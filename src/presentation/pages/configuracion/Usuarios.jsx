@@ -14,6 +14,7 @@ function getIniciales(nombre = "") {
 
 const inputCls = "w-full px-4 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#F05454] focus:border-transparent transition-colors text-sm";
 const labelCls = "block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1";
+const ROLES_FILTRO = ["Todos", "Administrador", "Cocinero", "Cliente"];
 const ESTADOS_FILTRO = ["Todos", "Activo", "Inactivo"];
 
 export function Usuarios() {
@@ -206,6 +207,7 @@ export function Usuarios() {
 
     // Si es cliente, la dirección es requerida
     if (isCliente(editForm.idRolStr) && !editForm.direccion.trim()) {
+    if (editForm.idRolStr === "3" && !editForm.direccion.trim()) {
       notifError("Campo requerido", "La dirección es obligatoria para usuarios con rol Cliente");
       return;
     }
@@ -225,6 +227,7 @@ export function Usuarios() {
           email: editForm.email.trim(),
           telefono: editForm.telefono.trim(),
           direccion: isCliente(editForm.idRolStr) ? editForm.direccion.trim() : "",
+          direccion: editForm.idRolStr === "3" ? editForm.direccion.trim() : "",
           idRol: parseInt(editForm.idRolStr),
           estado: editForm.estado === "Activo" ? "ACTIVO" : "INACTIVO"
         })
@@ -279,6 +282,7 @@ export function Usuarios() {
       return;
     }
     if (isCliente(newForm.idRolStr) && !newForm.direccion.trim()) {
+    if (newForm.idRolStr === "3" && !newForm.direccion.trim()) {
       notifError("Campo requerido", "La dirección es obligatoria para usuarios con rol Cliente");
       return;
     }
@@ -299,6 +303,7 @@ export function Usuarios() {
           email: newForm.email.trim(),
           telefono: newForm.telefono.trim(),
           direccion: isCliente(newForm.idRolStr) ? newForm.direccion.trim() : "",
+          direccion: newForm.idRolStr === "3" ? newForm.direccion.trim() : "",
           contrasena: newForm.password,
           idRol: parseInt(newForm.idRolStr),
           estado: newForm.estado === "Activo" ? "ACTIVO" : "INACTIVO"
@@ -492,6 +497,7 @@ export function Usuarios() {
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 p-3 mb-6 flex flex-wrap gap-2 items-center">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mr-1">Rol:</span>
         {["Todos", ...rolesList.map((r) => r.nombre)].map((r) => <button key={r} onClick={() => setFilterRol(r)} className={pillBtn(filterRol === r)}>{r}</button>)}
+        {ROLES_FILTRO.map((r) => <button key={r} onClick={() => setFilterRol(r)} className={pillBtn(filterRol === r)}>{r}</button>)}
         <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mr-1">Estado:</span>
         {ESTADOS_FILTRO.map((e) => <button key={e} onClick={() => setFilterEstado(e)} className={pillBtn(filterEstado === e)}>{e}</button>)}
@@ -706,6 +712,13 @@ export function Usuarios() {
                 </div>
                 {/* Conditional Address field: only shown if rol is Cliente */}
                 {isCliente(editForm.idRolStr) && <div className="sm:col-span-2 animate-fadeIn">
+                    <option value="1">Administrador</option>
+                    <option value="2">Cocinero</option>
+                    <option value="3">Cliente</option>
+                  </select>
+                </div>
+                {/* Conditional Address field: only shown if rol is Cliente */}
+                {editForm.idRolStr === "3" && <div className="sm:col-span-2 animate-fadeIn">
                   <label className={labelCls}>Dirección <span className="text-red-500">*</span></label>
                   <input type="text" value={editForm.direccion} onChange={(e) => setEditForm((f) => ({ ...f, direccion: e.target.value }))} className={inputCls} placeholder="Calle 12 # 34-56" />
                 </div>}
@@ -779,6 +792,13 @@ export function Usuarios() {
                 </div>
                 {/* Conditional Address field: only shown if rol is Cliente */}
                 {isCliente(newForm.idRolStr) && <div className="sm:col-span-2 animate-fadeIn">
+                    <option value="1">Administrador</option>
+                    <option value="2">Cocinero</option>
+                    <option value="3">Cliente</option>
+                  </select>
+                </div>
+                {/* Conditional Address field: only shown if rol is Cliente */}
+                {newForm.idRolStr === "3" && <div className="sm:col-span-2 animate-fadeIn">
                   <label className={labelCls}>Dirección <span className="text-red-500">*</span></label>
                   <input type="text" value={newForm.direccion} onChange={(e) => setNewForm((f) => ({ ...f, direccion: e.target.value }))} className={inputCls} placeholder="Calle 12 # 34-56" />
                 </div>}
