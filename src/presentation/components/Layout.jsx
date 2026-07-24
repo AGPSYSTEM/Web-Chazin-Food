@@ -44,6 +44,13 @@ export function Layout() {
   const handleNavClick = () => {
     setSidebarOpen(false);
   };
+
+  // ── Permission helper ──
+  // Administrador always has all permissions; for other roles, check the permisos array
+  const isAdmin = user?.rol?.toLowerCase() === "administrador";
+  const userPermisos = user?.permisos || [];
+  const hasPerm = (permName) => isAdmin || userPermisos.includes(permName);
+
   const handleLogout = async () => {
     setSidebarOpen(false);
     const confirmed = await confirmLogout();
@@ -65,24 +72,44 @@ export function Layout() {
     setConfigExpanded(section === "config");
     setSidebarOpen(true);
   };
-  const comprasItems = [
-    { to: "/compras/categoria-insumos", label: "Categor\xEDa Insumos" },
-    { to: "/compras/insumos", label: "Insumos" },
-    { to: "/compras/proveedores", label: "Proveedores" },
-    { to: "/compras/gestion", label: "Gesti\xF3n de Compras" }
+
+  // Filter nav items based on permissions
+  const allComprasItems = [
+    { to: "/compras/categoria-insumos", label: "Categor\xEDa Insumos", perm: "Categoría Insumos" },
+    { to: "/compras/insumos", label: "Insumos", perm: "Insumos" },
+    { to: "/compras/proveedores", label: "Proveedores", perm: "Proveedores" },
+    { to: "/compras/gestion", label: "Gesti\xF3n de Compras", perm: "Gestión de Compras" }
   ];
-  const produccionItems = [
-    { to: "/ventas/categoria-productos", label: "Categor\xEDa Productos" },
-    { to: "/ventas/productos", label: "Productos" },
-    { to: "/ventas/fichas-tecnicas", label: "Fichas T\xE9cnicas" },
-    { to: "/produccion/gestion", label: "Gesti\xF3n de Producci\xF3n" }
+  const comprasItems = allComprasItems.filter(i => hasPerm(i.perm));
+  const showCompras = hasPerm("Compras") || comprasItems.length > 0;
+
+  const allProduccionItems = [
+    { to: "/ventas/categoria-productos", label: "Categor\xEDa Productos", perm: "Categoría Productos" },
+    { to: "/ventas/productos", label: "Productos", perm: "Productos" },
+    { to: "/ventas/fichas-tecnicas", label: "Fichas T\xE9cnicas", perm: "Fichas Técnicas" },
+    { to: "/produccion/gestion", label: "Gesti\xF3n de Producci\xF3n", perm: "Gestión de Producción" }
   ];
+  const produccionItems = allProduccionItems.filter(i => hasPerm(i.perm));
+  const showProduccion = hasPerm("Producción") || produccionItems.length > 0;
+
   const produccionPaths = produccionItems.map((i) => i.to);
-  const ventasItems = [
-    { to: "/ventas/clientes", label: "Clientes" },
-    { to: "/ventas/gestion-ventas", label: "Gesti\xF3n de Ventas" }
+
+  const allVentasItems = [
+    { to: "/ventas/clientes", label: "Clientes", perm: "Clientes" },
+    { to: "/ventas/gestion-ventas", label: "Gesti\xF3n de Ventas", perm: "Gestión de Ventas" }
   ];
+  const ventasItems = allVentasItems.filter(i => hasPerm(i.perm));
+  const showVentas = hasPerm("Ventas") || ventasItems.length > 0;
+
   const ventasPaths = ventasItems.map((i) => i.to);
+
+  const allConfigItems = [
+    { to: "/configuracion/roles", label: "Roles", perm: "Roles" },
+    { to: "/configuracion/usuarios", label: "Usuarios", perm: "Usuarios" }
+  ];
+  const configItems = allConfigItems.filter(i => hasPerm(i.perm));
+  const showConfig = hasPerm("Configuración") || configItems.length > 0;
+
   return <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
 
       {
@@ -135,30 +162,30 @@ export function Layout() {
             {
     /* Dashboard */
   }
-            <li>
+            {hasPerm("Dashboard") && <li>
               <Link to="/" title="Dashboard" className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${isActive("/") ? "bg-red-600 text-white shadow-md" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 <Home className="w-5 h-5 shrink-0" />
                 {sidebarOpen && <span className="font-medium">Dashboard</span>}
               </Link>
-            </li>
+            </li>}
 
             {
     /* Configuración — second, right after Dashboard */
   }
-            <li>
+            {showConfig && <li>
               <button onClick={() => handleSectionClick(setConfigExpanded, configExpanded)} title="Configuración" className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all ${isInSection("/configuracion") ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 <div className="flex items-center gap-3"><Settings className="w-5 h-5 shrink-0" />{sidebarOpen && <span className="font-medium">Configuración</span>}</div>
                 {sidebarOpen && (configExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />)}
               </button>
               {sidebarOpen && configExpanded && <ul className="ml-8 mt-1 space-y-1">
-                  {[{ to: "/configuracion/roles", label: "Roles" }, { to: "/configuracion/usuarios", label: "Usuarios" }].map(({ to, label }) => <li key={to}><Link to={to} className={`block px-4 py-2 rounded-lg text-sm transition-all ${isActive(to) ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>{label}</Link></li>)}
+                  {configItems.map(({ to, label }) => <li key={to}><Link to={to} className={`block px-4 py-2 rounded-lg text-sm transition-all ${isActive(to) ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>{label}</Link></li>)}
                 </ul>}
-            </li>
+            </li>}
 
             {
     /* Compras */
   }
-            <li>
+            {showCompras && <li>
               <button onClick={() => handleSectionClick(setComprasExpanded, comprasExpanded)} title="Compras" className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all ${isInSection("/compras") ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 <div className="flex items-center gap-3"><ShoppingCart className="w-5 h-5 shrink-0" />{sidebarOpen && <span className="font-medium">Compras</span>}</div>
                 {sidebarOpen && (comprasExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />)}
@@ -166,12 +193,12 @@ export function Layout() {
               {sidebarOpen && comprasExpanded && <ul className="ml-8 mt-1 space-y-1">
                   {comprasItems.map(({ to, label }) => <li key={to}><Link to={to} className={`block px-4 py-2 rounded-lg text-sm transition-all ${isActive(to) ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>{label}</Link></li>)}
                 </ul>}
-            </li>
+            </li>}
 
             {
     /* Producción */
   }
-            <li>
+            {showProduccion && <li>
               <button onClick={() => handleSectionClick(setProduccionExpanded, produccionExpanded)} title="Producción" className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all ${isInSection("/produccion") || produccionPaths.includes(location.pathname) ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 <div className="flex items-center gap-3"><ChefHat className="w-5 h-5 shrink-0" />{sidebarOpen && <span className="font-medium">Producción</span>}</div>
                 {sidebarOpen && (produccionExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />)}
@@ -179,12 +206,12 @@ export function Layout() {
               {sidebarOpen && produccionExpanded && <ul className="ml-8 mt-1 space-y-1">
                   {produccionItems.map(({ to, label }) => <li key={to}><Link to={to} className={`block px-4 py-2 rounded-lg text-sm transition-all ${isActive(to) ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>{label}</Link></li>)}
                 </ul>}
-            </li>
+            </li>}
 
             {
     /* Ventas */
   }
-            <li>
+            {showVentas && <li>
               <button onClick={() => handleSectionClick(setVentasExpanded, ventasExpanded)} title="Ventas" className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all ${ventasPaths.includes(location.pathname) ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>
                 <div className="flex items-center gap-3"><TrendingUp className="w-5 h-5 shrink-0" />{sidebarOpen && <span className="font-medium">Ventas</span>}</div>
                 {sidebarOpen && (ventasExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />)}
@@ -192,7 +219,7 @@ export function Layout() {
               {sidebarOpen && ventasExpanded && <ul className="ml-8 mt-1 space-y-1">
                   {ventasItems.map(({ to, label }) => <li key={to}><Link to={to} className={`block px-4 py-2 rounded-lg text-sm transition-all ${isActive(to) ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>{label}</Link></li>)}
                 </ul>}
-            </li>
+            </li>}
           </ul>
 
           {
@@ -282,19 +309,19 @@ export function Layout() {
           {
     /* Dashboard */
   }
-          <Link
+          {hasPerm("Dashboard") && <Link
     to="/"
     onClick={handleNavClick}
     className={`flex items-center gap-3 mx-2 px-3 py-3 rounded-xl transition-colors active:scale-[0.98] ${isActive("/") ? "bg-red-600 text-white shadow-sm" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
   >
             <LayoutDashboard className="w-5 h-5 shrink-0" />
             <span className="font-medium">Dashboard</span>
-          </Link>
+          </Link>}
 
           {
     /* Configuración — accordion, right after Dashboard */
   }
-          <div className="mx-2">
+          {showConfig && <div className="mx-2">
             <button
     onClick={() => setConfigExpanded((v) => !v)}
     className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-colors ${isInSection("/configuracion") ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
@@ -303,23 +330,28 @@ export function Layout() {
               {configExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </button>
             {configExpanded && <ul className="ml-9 mb-1 space-y-0.5">
-                {[{ to: "/configuracion/roles", label: "Roles", icon: Shield }, { to: "/configuracion/usuarios", label: "Usuarios", icon: Users }].map(({ to, label, icon: Icon }) => <li key={to}>
-                    <Link
-    to={to}
-    onClick={handleNavClick}
-    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive(to) ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
-  >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      {label}
-                    </Link>
-                  </li>)}
+                {configItems.map(({ to, label }) => {
+                  const Icon = label === "Roles" ? Shield : Users;
+                  return (
+                    <li key={to}>
+                      <Link
+                        to={to}
+                        onClick={handleNavClick}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive(to) ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>}
-          </div>
+          </div>}
 
           {
     /* Compras — accordion */
   }
-          <div className="mx-2">
+          {showCompras && <div className="mx-2">
             <button
     onClick={() => setComprasExpanded((v) => !v)}
     className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-colors ${isInSection("/compras") ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
@@ -336,12 +368,12 @@ export function Layout() {
   >{label}</Link>
                   </li>)}
               </ul>}
-          </div>
+          </div>}
 
           {
     /* Producción — accordion */
   }
-          <div className="mx-2">
+          {showProduccion && <div className="mx-2">
             <button
     onClick={() => setProduccionExpanded((v) => !v)}
     className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-colors ${isInSection("/produccion") || produccionPaths.some((p) => isActive(p)) ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
@@ -358,12 +390,12 @@ export function Layout() {
   >{label}</Link>
                   </li>)}
               </ul>}
-          </div>
+          </div>}
 
           {
     /* Ventas — accordion */
   }
-          <div className="mx-2">
+          {showVentas && <div className="mx-2">
             <button
     onClick={() => setVentasExpanded((v) => !v)}
     className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-colors ${ventasPaths.includes(location.pathname) ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
@@ -380,7 +412,7 @@ export function Layout() {
   >{label}</Link>
                   </li>)}
               </ul>}
-          </div>
+          </div>}
 
           {
     /* ── CUENTA ── */
