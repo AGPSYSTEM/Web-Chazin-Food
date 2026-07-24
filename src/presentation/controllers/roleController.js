@@ -50,10 +50,21 @@ const deleteRole = async (req, res, next) => {
   }
 };
 
+const updateRolePermisos = async (req, res, next) => {
+  try {
+    const updatedRole = await RoleService.updateRole(req.params.id, { permisos: req.body.permisos });
+    res.json(updatedRole);
+  } catch (error) {
+    if (error.statusCode) res.status(error.statusCode);
+    next(error);
+  }
+};
+
 module.exports = {
   getRoles,
   getRoleById,
   createRole,
   updateRole,
+  updateRolePermisos,
   deleteRole,
 };
