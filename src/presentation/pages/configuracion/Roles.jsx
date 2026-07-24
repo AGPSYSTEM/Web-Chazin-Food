@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Shield, Check, Users, X, Edit, Trash2, ToggleLeft, ToggleRight, Plus } from "lucide-react";
+import { Search, Shield, Check, Users, X, Edit, Trash2, ToggleLeft, ToggleRight, Plus, AlertTriangle } from "lucide-react";
 const rolesData = [
   {
     id: 1,
@@ -74,9 +74,9 @@ export function Roles() {
   const [nuevoDescripcion, setNuevoDescripcion] = useState("");
   const [toast, setToast] = useState(null);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (msg, type = "success") => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), 3500);
   };
 
   const fetchRoles = async () => {
@@ -90,7 +90,7 @@ export function Roles() {
       setRoles(data);
     } catch (error) {
       console.error(error);
-      showToast("Error al cargar los roles");
+      showToast("Error al cargar los roles", "error");
     } finally {
       setLoading(false);
     }
@@ -135,16 +135,17 @@ export function Roles() {
       });
 
       if (!response.ok) {
-        throw new Error("Error al actualizar los permisos");
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || "Error al actualizar los permisos");
       }
 
       setRoles((prev) => prev.map((r) => r.id === selectedRol.id ? { ...r, permisos: [...editingPermisos] } : r));
       setShowPermisosModal(false);
       setSelectedRol(null);
-      showToast("Permisos actualizados correctamente");
+      showToast("Permisos actualizados correctamente", "success");
     } catch (error) {
       console.error(error);
-      showToast("Error al actualizar los permisos");
+      showToast(error.message || "Error al actualizar los permisos", "error");
     }
   };
 
@@ -274,10 +275,18 @@ export function Roles() {
       {
     /* Toast */
   }
-      {toast && <div className="fixed top-4 right-4 z-[100] bg-green-600 text-white px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-medium animate-fade-in">
-          <Check className="w-4 h-4 shrink-0" />
-          {toast}
-        </div>}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[100] text-white px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-medium animate-fade-in ${
+          (typeof toast === 'object' ? toast.type : 'success') === 'error' ? 'bg-red-600' : 'bg-green-600'
+        }`}>
+          {(typeof toast === 'object' ? toast.type : 'success') === 'error' ? (
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+          ) : (
+            <Check className="w-4 h-4 shrink-0" />
+          )}
+          {typeof toast === 'object' ? toast.message : toast}
+        </div>
+      )}
 
       {
     /* Header */
