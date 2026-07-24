@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Role, Cliente } = require('../../persistence/models');
+const { User, Role, Cliente, Permiso } = require('../../persistence/models');
 
 class AuthService {
   static generateToken(id) {
@@ -102,7 +102,10 @@ class AuthService {
 
     const user = await User.findOne({
       where: { email: finalEmail },
-      include: [{ model: Role, as: 'rolInfo' }, { model: Cliente, as: 'clienteInfo' }]
+      include: [
+        { model: Role, as: 'rolInfo', include: [{ model: Permiso, as: 'permisos', through: { attributes: [] } }] },
+        { model: Cliente, as: 'clienteInfo' }
+      ]
     });
 
     if (!user) {
@@ -120,6 +123,10 @@ class AuthService {
 
     const rolNombre = user.rolInfo ? user.rolInfo.nombre : 'Usuario';
     const direccion = user.clienteInfo ? user.clienteInfo.direccion : '';
+    // Extract permission names from the role's associated permissions
+    const permisos = user.rolInfo && user.rolInfo.permisos
+      ? user.rolInfo.permisos.map(p => p.nombrePermiso)
+      : [];
 
     return {
       _id: user.idUsuario,
@@ -132,6 +139,7 @@ class AuthService {
       correo: user.email,
       rol: rolNombre,
       idRol: user.idRol,
+      permisos,
       direccion,
       token: this.generateToken(user.idUsuario)
     };
