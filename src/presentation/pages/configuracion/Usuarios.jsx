@@ -60,6 +60,8 @@ export function Usuarios() {
     confirmPassword: ""
   });
 
+  const [rolesList, setRolesList] = useState([]);
+
   // Fetch users from API
   const fetchUsers = async () => {
     try {
@@ -87,8 +89,35 @@ export function Usuarios() {
     }
   };
 
+  // Fetch roles dynamically from API
+  const fetchRoles = async () => {
+    try {
+      const savedUser = JSON.parse(localStorage.getItem("chazin_user") || "{}");
+      const response = await fetch("http://localhost:5000/api/roles", {
+        headers: {
+          "Authorization": `Bearer ${savedUser.token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRolesList(data.filter(r => r.estado === "Activo" || r.estado === 1));
+      }
+    } catch (err) {
+      console.error("Error al cargar roles:", err);
+    }
+  };
+
+  const isCliente = (idRolStr) => {
+    const rolObj = rolesList.find(r => String(r.id) === String(idRolStr));
+    if (rolObj) {
+      return rolObj.nombre.toLowerCase().trim() === "cliente";
+    }
+    return String(idRolStr) === "3";
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, []);
 
   const openPassword = (u) => {
@@ -182,7 +211,7 @@ export function Usuarios() {
     }
 
     // Si es cliente, la dirección es requerida
-    if (editForm.idRolStr === "3" && !editForm.direccion.trim()) {
+    if (isCliente(editForm.idRolStr) && !editForm.direccion.trim()) {
       notifError("Campo requerido", "La dirección es obligatoria para usuarios con rol Cliente");
       return;
     }
@@ -201,7 +230,7 @@ export function Usuarios() {
           tipoDocumento: editForm.tipoDocumento,
           email: editForm.email.trim(),
           telefono: editForm.telefono.trim(),
-          direccion: editForm.idRolStr === "3" ? editForm.direccion.trim() : "",
+          direccion: isCliente(editForm.idRolStr) ? editForm.direccion.trim() : "",
           idRol: parseInt(editForm.idRolStr),
           estado: editForm.estado === "Activo" ? "ACTIVO" : "INACTIVO"
         })
@@ -255,7 +284,7 @@ export function Usuarios() {
       notifError("Contraseñas no coinciden", "Verifica que las contraseñas sean iguales");
       return;
     }
-    if (newForm.idRolStr === "3" && !newForm.direccion.trim()) {
+    if (isCliente(newForm.idRolStr) && !newForm.direccion.trim()) {
       notifError("Campo requerido", "La dirección es obligatoria para usuarios con rol Cliente");
       return;
     }
@@ -275,7 +304,7 @@ export function Usuarios() {
           apellidos: newForm.apellidos.trim(),
           email: newForm.email.trim(),
           telefono: newForm.telefono.trim(),
-          direccion: newForm.idRolStr === "3" ? newForm.direccion.trim() : "",
+          direccion: isCliente(newForm.idRolStr) ? newForm.direccion.trim() : "",
           contrasena: newForm.password,
           idRol: parseInt(newForm.idRolStr),
           estado: newForm.estado === "Activo" ? "ACTIVO" : "INACTIVO"
@@ -468,7 +497,7 @@ export function Usuarios() {
       {/* Filter pills */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 p-3 mb-6 flex flex-wrap gap-2 items-center">
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mr-1">Rol:</span>
-        {ROLES_FILTRO.map((r) => <button key={r} onClick={() => setFilterRol(r)} className={pillBtn(filterRol === r)}>{r}</button>)}
+        {["Todos", ...(rolesList.length > 0 ? rolesList.map(r => r.nombre) : ["Administrador", "Cocinero", "Cliente"])].map((r) => <button key={r} onClick={() => setFilterRol(r)} className={pillBtn(filterRol === r)}>{r}</button>)}
         <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mr-1">Estado:</span>
         {ESTADOS_FILTRO.map((e) => <button key={e} onClick={() => setFilterEstado(e)} className={pillBtn(filterEstado === e)}>{e}</button>)}
@@ -672,13 +701,21 @@ export function Usuarios() {
                 <div>
                   <label className={labelCls}>Rol</label>
                   <select value={editForm.idRolStr} onChange={(e) => setEditForm((f) => ({ ...f, idRolStr: e.target.value }))} className={inputCls}>
-                    <option value="1">Administrador</option>
-                    <option value="2">Cocinero</option>
-                    <option value="3">Cliente</option>
+                    {rolesList.length > 0 ? (
+                      rolesList.map((r) => (
+                        <option key={r.id} value={String(r.id)}>{r.nombre}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="1">Administrador</option>
+                        <option value="2">Cocinero</option>
+                        <option value="3">Cliente</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 {/* Conditional Address field: only shown if rol is Cliente */}
-                {editForm.idRolStr === "3" && <div className="sm:col-span-2 animate-fadeIn">
+                {isCliente(editForm.idRolStr) && <div className="sm:col-span-2 animate-fadeIn">
                   <label className={labelCls}>Dirección <span className="text-red-500">*</span></label>
                   <input type="text" value={editForm.direccion} onChange={(e) => setEditForm((f) => ({ ...f, direccion: e.target.value }))} className={inputCls} placeholder="Calle 12 # 34-56" />
                 </div>}
@@ -741,13 +778,21 @@ export function Usuarios() {
                 <div>
                   <label className={labelCls}>Rol <span className="text-red-500">*</span></label>
                   <select value={newForm.idRolStr} onChange={(e) => setNewForm((f) => ({ ...f, idRolStr: e.target.value }))} className={inputCls}>
-                    <option value="1">Administrador</option>
-                    <option value="2">Cocinero</option>
-                    <option value="3">Cliente</option>
+                    {rolesList.length > 0 ? (
+                      rolesList.map((r) => (
+                        <option key={r.id} value={String(r.id)}>{r.nombre}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="1">Administrador</option>
+                        <option value="2">Cocinero</option>
+                        <option value="3">Cliente</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 {/* Conditional Address field: only shown if rol is Cliente */}
-                {newForm.idRolStr === "3" && <div className="sm:col-span-2 animate-fadeIn">
+                {isCliente(newForm.idRolStr) && <div className="sm:col-span-2 animate-fadeIn">
                   <label className={labelCls}>Dirección <span className="text-red-500">*</span></label>
                   <input type="text" value={newForm.direccion} onChange={(e) => setNewForm((f) => ({ ...f, direccion: e.target.value }))} className={inputCls} placeholder="Calle 12 # 34-56" />
                 </div>}
