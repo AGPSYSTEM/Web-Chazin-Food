@@ -20,23 +20,25 @@ import { CocineroDashboard } from '@/presentation/pages/cocinero/CocineroDashboa
 import { FichasTecnicas } from '@/presentation/pages/fichasTecnicas/FichasTecnicas';
 import { GestionProduccion } from '@/presentation/pages/produccion/GestionProduccion';
 
-function ProtectedRoute({ children, allowedRoles }) {
-  const { user, isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && user) {
-    const userRol = user.rol?.toLowerCase();
-    const allowed = allowedRoles.map(r => r.toLowerCase());
-    if (!allowed.includes(userRol)) {
-      return <Navigate to="/" replace />;
-    }
-  }
-
-  return <>{children}</>;
-}
+/**
+ * Maps permission names (as stored in the DB) to route paths.
+ * A user with a given permission will have access to the corresponding route(s).
+ */
+const PERMISSION_ROUTE_MAP = {
+  "Dashboard":             { path: "",                          element: <Dashboard /> },
+  "Categoría Insumos":     { path: "compras/categoria-insumos", element: <CategoriaInsumos /> },
+  "Insumos":               { path: "compras/insumos",           element: <Insumos /> },
+  "Proveedores":           { path: "compras/proveedores",       element: <Proveedores /> },
+  "Gestión de Compras":    { path: "compras/gestion",           element: <GestionCompras /> },
+  "Categoría Productos":   { path: "ventas/categoria-productos",element: <CategoriaProductos /> },
+  "Productos":             { path: "ventas/productos",          element: <Productos /> },
+  "Fichas Técnicas":       { path: "ventas/fichas-tecnicas",    element: <FichasTecnicas /> },
+  "Gestión de Producción": { path: "produccion/gestion",        element: <GestionProduccion /> },
+  "Clientes":              { path: "ventas/clientes",           element: <Clientes /> },
+  "Gestión de Ventas":     { path: "ventas/gestion-ventas",     element: <GestionVentas /> },
+  "Roles":                 { path: "configuracion/roles",       element: <Roles /> },
+  "Usuarios":              { path: "configuracion/usuarios",    element: <Usuarios /> },
+};
 
 export function AppRoutes() {
   const { user, isAuthenticated } = useAuth();
@@ -55,6 +57,7 @@ export function AppRoutes() {
 
   const userRol = user?.rol?.toLowerCase();
 
+  // ── Cliente: only landing page ──
   if (userRol === 'cliente') {
     return (
       <Routes>
@@ -65,6 +68,7 @@ export function AppRoutes() {
     );
   }
 
+  // ── Cocinero: hardcoded limited view ──
   if (userRol === 'cocinero') {
     return (
       <Routes>
@@ -76,23 +80,57 @@ export function AppRoutes() {
     );
   }
 
+  // ── Administrador: full access to everything ──
+  if (userRol === 'administrador') {
+    return (
+      <Routes>
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="compras/categoria-insumos" element={<CategoriaInsumos />} />
+          <Route path="compras/insumos" element={<Insumos />} />
+          <Route path="compras/proveedores" element={<Proveedores />} />
+          <Route path="compras/gestion" element={<GestionCompras />} />
+          <Route path="produccion/gestion" element={<GestionProduccion />} />
+          <Route path="ventas/categoria-productos" element={<CategoriaProductos />} />
+          <Route path="ventas/productos" element={<Productos />} />
+          <Route path="ventas/clientes" element={<Clientes />} />
+          <Route path="ventas/gestion-ventas" element={<GestionVentas />} />
+          <Route path="ventas/fichas-tecnicas" element={<FichasTecnicas />} />
+          <Route path="configuracion/roles" element={<Roles />} />
+          <Route path="configuracion/usuarios" element={<Usuarios />} />
+        </Route>
+      </Routes>
+    );
+  }
+
+  // ── Any other role (e.g. Vendedor): permission-based access ──
+  const userPermisos = user?.permisos || [];
+
+  // Build the allowed routes from the user's permissions
+  const allowedRoutes = [];
+  for (const perm of userPermisos) {
+    const routeConfig = PERMISSION_ROUTE_MAP[perm];
+    if (routeConfig) {
+      allowedRoutes.push(routeConfig);
+    }
+  }
+
+  // If user has Dashboard permission, use it as index; otherwise show first allowed route
+  const hasDashboard = userPermisos.includes("Dashboard");
+
   return (
     <Routes>
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="/" element={<Layout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="compras/categoria-insumos" element={<CategoriaInsumos />} />
-        <Route path="compras/insumos" element={<Insumos />} />
-        <Route path="compras/proveedores" element={<Proveedores />} />
-        <Route path="compras/gestion" element={<GestionCompras />} />
-        <Route path="produccion/gestion" element={<GestionProduccion />} />
-        <Route path="ventas/categoria-productos" element={<CategoriaProductos />} />
-        <Route path="ventas/productos" element={<Productos />} />
-        <Route path="ventas/clientes" element={<Clientes />} />
-        <Route path="ventas/gestion-ventas" element={<GestionVentas />} />
-        <Route path="ventas/fichas-tecnicas" element={<FichasTecnicas />} />
-        <Route path="configuracion/roles" element={<Roles />} />
-        <Route path="configuracion/usuarios" element={<Usuarios />} />
+        {hasDashboard && <Route index element={<Dashboard />} />}
+        {!hasDashboard && allowedRoutes.length > 0 && (
+          <Route index element={<Navigate to={`/${allowedRoutes[0].path}`} replace />} />
+        )}
+        {allowedRoutes.map((route) => (
+          route.path !== "" && <Route key={route.path} path={route.path} element={route.element} />
+        ))}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   );
